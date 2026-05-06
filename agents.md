@@ -3,6 +3,16 @@
 ## Overview
 This repository contains shared agents, workflows, and skills for development projects. Agents follow a consistent interface defined in `agents/base/base_agent.py`.
 
+## Testing Approach (TDD/BDD/SDD)
+**Read `.agents/TESTING_GUIDELINES.md` before writing tests.**
+
+This is a **base reference, not strict rules** – adapt as needed for each task.
+- **TDD**: Unit tests for pure logic (metrics, API handlers)
+- **BDD**: Integration tests for user flows (services page, navigation)  
+- **SDD**: TypeScript types + Zod schemas for API contracts
+
+Prioritize practicality over dogma. See the full guidelines file for details.
+
 ## Agent Structure
 ```
 agents/

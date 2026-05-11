@@ -40,9 +40,11 @@ Un dashboard industrial no puede ser lento.
 - **Edge cases:** Siempre manejar el estado `Empty` y `Error`. Un "Monitor de Red" vacío debe explicar por qué está vacío.
 - **Sentinel Compliance (V8.2):** Obligatorio cumplir con el Protocolo de Integridad Semántica: cero hardcoding de nombres, cero branding inventado y cero mensajes predictivos sin datos reales.
 
-## 🧪 Calidad y Testing
+## 🧪 Calidad y Testing (Mandatorio)
+- **BDD Acceptance:** Antes de implementar una vista, se deben validar los escenarios en `BDD_DAS.md`.
+- **TDD Flow:** Escribir pruebas unitarias para Hooks personalizados y lógica de validación de formularios antes de la implementación.
 - **Self-Audit:** Antes de enviar un PR, el desarrollador debe pasar el Agente `Guardian Prime` para validar UI y A11y.
-- **Unit Testing:** Crítico para funciones de cálculo de sensores y lógica de alertas.
+- **SDD Integrity:** Cualquier cambio en el flujo de datos o arquitectura debe ser reflejado primero en el `SDD_DAS.md`.
 
 ---
 © 2026 SafetyMind Dev Engineering. ⚙️⚛️

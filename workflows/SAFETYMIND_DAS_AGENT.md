@@ -21,23 +21,22 @@ Para mantener la unidad del ecosistema, DAS utiliza la paleta **Elite**:
 - **Cuerpo Técnico**: `Outfit` (400) para descripciones de riesgo.
 - **Métricas de Cámara**: `JetBrains Mono` para scores y modelos (evita confusión visual).
 
-## 🏗️ Protocolos del Workflow de Diagnóstico
+## 🏗️ Protocolos del Workflow de Diagnóstico (V4.2)
 
-### 1. El Wizard de 4 Etapas
-- **Etapa 1: Identificación**: Inputs limpios con `var(--color-input-bg)`.
-- **Etapa 2: Factores de Riesgo**: Iconografía estilo "Traffic Sign" (Triángulos industriales amarillos). Cada factor debe ser seleccionable con feedback visual inmediato.
-- **Etapa 3: Ingesta de Imágenes**: Slots numerados del 1 al 7. Debe indicar claramente qué cámara se está subiendo.
-- **Etapa 4: Análisis**: Animación de "IA Procesando..." estilo radar o escáner industrial.
+### 1. El Wizard de 3 Etapas (Optimizado)
+- **Etapa 1: Identificación**: Captura de Entidad, Email de contacto y parámetros de Red/VPN.
+- **Etapa 2: Inventario Visual y Riesgos**: Slot de 7 cámaras con selección de factores de riesgo *por cámara* integrada.
+- **Etapa 3: Validación Final**: Resumen de datos y confirmación de envío con feedback de "IA Procesando".
 
-### 2. El Reporte Bento Premium
-Los reportes generados deben seguir la arquitectura **Bento Grid**:
-- Tarjetas de diagnóstico individual por cámara.
-- Score global de viabilidad con color dinámico (Verde/Amarillo/Rojo).
-- Sección de "Notas Técnicas" en fuente Mono.
+### 2. Estándares de Ingeniería (Mandatorios)
+- **SDD Compliance**: Todo cambio estructural debe estar documentado en el `SDD_DAS.md`.
+- **BDD Driven**: Las nuevas funcionalidades deben cumplir con los escenarios descritos en `BDD_DAS.md`.
+- **TDD Enforcement**: Se deben ejecutar pruebas unitarias (`agent/tests`) antes de cualquier integración.
 
 ## 🤖 Reglas de Razonamiento (IA Logic)
 - **IA Rigurosa**: Si una imagen no permite ver el factor de riesgo con claridad, el score de "Focus" o "Resolution" debe ser < 60%.
 - **Penalización Sentinel**: Si el usuario ingresa datos incoherentes en infraestructura, la IA debe marcarlo como "Incertidumbre Técnica" y bajar el veredicto a AMARILLO preventivo.
+- **Validación de Inventario**: No permitir el envío si hay menos de 5 cámaras válidas.
 
 ## 👥 Protocolo HITL (Edición Técnica)
 - Todo diagnóstico debe pasar por la pantalla `/admin/review`.

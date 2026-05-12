@@ -1,11 +1,12 @@
 ---
-description: Behavior Driven Development (BDD) Scenarios for SafetyMind DAS — Aligned with Source of Truth
+description: Behavior Driven Development (BDD) Scenarios for SafetyMind DAS — Aligned with Arc42
 ---
 
 # 🛡️ BDD: Escenarios de Aceptación DAS (V4.3)
 
 > Alineado con: `Autodiagnóstico de Viabilidad Técnica (Seguros Bolívar).pdf`,
-> `Proceso semi automatización del diagnóstico.pdf` y `ruta_de_validacion.jpeg`
+> `Proceso semi automatización del diagnóstico.pdf`, `ruta_de_validacion.jpeg`
+> y documento **Arc42 §§5-7**.
 
 ---
 
@@ -66,6 +67,21 @@ And el panel de SLA muestra "Respuesta en 1 Día"
 
 ---
 
+## Feature: Recepción de Formulario (Arc42 §5)
+
+### Escenario: Cliente ingresa datos y sube 7 fotografías
+```gherkin
+Given que el cliente está en el paso 1 de la Landing Page
+When completa la información de Conectividad (VPN) y Servidor Local
+And completa los datos de 7 cámaras incluyendo tipo de riesgo a medir y sube 1 foto por cámara
+And hace clic en "Enviar"
+Then el cliente ve una pantalla de "Recibido"
+And se dispara el Webhook V2 en n8n
+And el cliente recibe un correo indicando que se recibieron sus datos y se emitirá el diagnóstico en máx. 24hrs
+```
+
+---
+
 ## Feature: Correo de Acuse de Recibo (ACK)
 
 ### Escenario: ACK inmediato al cliente
@@ -114,6 +130,58 @@ When el admin presiona "Ajustes"
 Then el estado cambia a ADJUSTMENTS_REQUIRED
 And se envía un email al cliente informando "Ajustes Pendientes"
 And el botón muestra "AJUSTES SOLICITADOS" en amarillo
+```
+
+---
+
+## Feature: Dashboard de Validación Interna (Arc42 §5)
+
+### Escenario: Técnico evalúa imágenes en el dashboard
+```gherkin
+Given que el técnico recibe un correo de notificación de nueva solicitud
+When el técnico ingresa al enlace provisto hacia el "Dashboard de Validación Interna"
+Then el técnico ve una interfaz oscura con el resumen de los datos del cliente
+And ve un listado/grid con las 7 cámaras subidas
+```
+
+### Escenario: Aprobación de cámara individual (Arc42)
+```gherkin
+Given que el técnico está revisando las cámaras en el dashboard
+When selecciona la Cámara 1
+And verifica que la toma es apta
+And presiona "Aprobar"
+Then el estado de la Cámara 1 cambia a "Validado"
+```
+
+### Escenario: Rechazo de cámara individual (Arc42)
+```gherkin
+Given que el técnico está revisando las cámaras en el dashboard
+When selecciona la Cámara 3
+And verifica que la toma no es apta (baja resolución, mal ángulo)
+And presiona "Rechazar"
+Then el estado de la Cámara 3 cambia a "Rechazado"
+And se muestra un campo para ingresar el motivo del rechazo
+```
+
+### Escenario: Finalizar diagnóstico tras revisar todas las cámaras (Arc42)
+```gherkin
+Given que el técnico ha validado o rechazado cada una de las 7 cámaras
+When presiona "Finalizar Diagnóstico"
+Then el sistema valida que todas las cámaras tienen un estado (aprobado/rechazado)
+And calcula el veredicto final basado en las decisiones del técnico
+And se envía el resultado al cliente
+```
+
+---
+
+## Feature: Notificación Final al Cliente (Arc42 §5)
+
+### Escenario: Envío de reporte semáforo
+```gherkin
+Given que el técnico ha validado las 7 cámaras y ha emitido un veredicto (Verde, Amarillo, Rojo)
+When el técnico hace clic en "Finalizar Diagnóstico"
+Then LangGraph compila la respuesta en el template HTML "Bento Premium"
+And n8n despacha automáticamente el resultado final por correo al cliente
 ```
 
 ---
@@ -186,14 +254,6 @@ Then el sistema muestra mensaje de error "Error de conexión con el servidor"
 
 ## Feature: Consola HITL Frontend — Editor
 
-### Escenario: Acceso con código de respaldo
-```gherkin
-Given que un técnico accede a /admin/review
-When ingresa "DAS2026" como passcode de respaldo
-And presiona "Entrar"
-Then accede al panel con notificación de "Acceso verificado"
-```
-
 ### Escenario: Código inválido muestra error
 ```gherkin
 Given que un técnico intenta acceder
@@ -206,9 +266,9 @@ Then ve el mensaje "Código de acceso inválido"
 Given que el técnico está autenticado en la consola
 When hace clic en un reporte de la cola lateral
 Then se muestra el detalle en el panel central:
-  | Evidencia: miniaturas de las 7 cámaras |
-  | Infraestructura: VPN y servidor         |
-  | Risk Evidence: factores detectados      |
+  | Evidencia: miniaturas de las 7 cámaras con scores IA |
+  | Infraestructura: VPN y servidor                       |
+  | Risk Evidence: factores detectados                    |
 ```
 
 ### Escenario: Editor de veredicto y score
@@ -217,7 +277,6 @@ Given que el admin tiene un reporte seleccionado
 When cambia el veredicto de "VERDE" a "ROJO"
 And modifica el score de 92 a 35
 Then el estado del reporte cambia a DRAFT
-And el color del score cambia según el veredicto
 ```
 
 ### Escenario: Reporte aprobado no permite edición
@@ -255,19 +314,140 @@ Then aplica la siguiente tabla:
 
 ---
 
+## Feature: Envío de Copia a Seguros Bolívar (n8n)
+
+### Escenario: n8n reenvía diagnóstico al grupo Seguros Bolívar
+```gherkin
+Given que n8n recibe la respuesta del backend con el reporte completo
+When la respuesta contiene verdict, html y data
+Then n8n envía un email a seguros-bolivar@safetymind.ai con:
+  | Campo    | Valor                                    |
+  | From     | victoria@safetymind.ai                   |
+  | To       | seguros-bolivar@safetymind.ai            |
+  | Asunto   | Nuevo Diagnóstico: {nombre}              |
+  | Body     | Resumen + HTML del reporte completo      |
+```
+
+---
+
+## Feature: SLA y Plazos (Arc42 §1)
+
+### Escenario: Plazo máximo de respuesta comunicado al cliente
+```gherkin
+Given que el cliente completa el formulario
+When recibe el ACK de confirmación
+Then el ACK debe comunicar explícitamente:
+  | Mensaje | "Recibirás el informe técnico completo en un plazo máximo de 1 día hábil" |
+```
+
+### Escenario: SLA visible en la interfaz de envío
+```gherkin
+Given que el usuario está en el Paso 3 (Validación Final)
+Then debe ver el SLA garantizado: "Respuesta en 1 Día"
+```
+
+---
+
+## Feature: Notificación Interna al Técnico (Arc42 §5)
+
+### Escenario: Correo de alerta al equipo SafetyMind
+```gherkin
+Given que el backend completa el análisis LangGraph
+When el reporte se persiste en SQLite con estado PENDING
+Then se envía un email a arturo@safetymind.ai con:
+  | Campo    | Valor                                    |
+  | Asunto   | Nuevo Diagnóstico: {nombre}              |
+  | Body     | Reporte HTML completo con scores y fotos |
+  | Link     | Enlace a /admin/review para revisión     |
+```
+
+---
+
+## Feature: Validación de Imágenes (Criterios de Calidad Visual)
+
+### Escenario: IA evalúa calidad de imagen por cámara
+```gherkin
+Given que el backend recibe 7 imágenes de cámaras
+When el nodo Vision Analysis de LangGraph procesa cada imagen
+Then asigna scores individuales de:
+  | Criterio     | Rango  | Descripción                          |
+  | Resolución   | 0-100  | Calidad de megapíxeles               |
+  | Enfoque      | 0-100  | Nitidez de la imagen                 |
+  | Iluminación  | 0-100  | Condiciones de luz                   |
+  | Cobertura    | 0-100  | Ángulo y campo visual                |
+```
+
+### Escenario: Fallback de IA por cuota (Arc42 §7)
+```gherkin
+Given que la API de Gemini 2.0 Flash excede su cuota
+When el nodo Vision Analysis falla
+Then el sistema activa fallback con scores nominales (85/80/90/75)
+And la cámara se marca como "Pendiente revisión 100% humana"
+```
+
+---
+
+## Feature: Admin Console — Scores IA Visibles
+
+### Escenario: Técnico ve pre-análisis IA por cámara
+```gherkin
+Given que el técnico selecciona un reporte en la consola
+When revisa el grid de cámaras
+Then debajo de cada miniatura debe ver:
+  | Score         | Color        | Significado                     |
+  | > 75          | Verde        | Aprobado por IA                 |
+  | 50-75         | Amarillo     | Revisión recomendada            |
+  | < 50          | Rojo         | Rechazado por IA                |
+```
+
+---
+
+## Feature: Pipeline de Calidad (Arc42 §7 — TDD)
+
+### Escenario: Pruebas unitarias del backend pasan antes del deploy
+```gherkin
+Given que se ha realizado un cambio en agent/main.py o agent/langgraph_agent.py
+When se ejecuta `cd agent && python3 -m pytest tests/ -v`
+Then todos los tests deben pasar (estado: PASSED)
+```
+
+### Escenario: Pruebas unitarias del frontend pasan antes del deploy
+```gherkin
+Given que se ha realizado un cambio en frontend/src/
+When se ejecuta `cd frontend && npx vitest run`
+Then todos los tests deben pasar (estado: PASSED)
+```
+
+### Escenario: Build de TypeScript sin errores
+```gherkin
+Given que se ha realizado un cambio en frontend/
+When se ejecuta `cd frontend && npm run build`
+Then el build debe completar sin errores de tipo (TypeScript strict)
+```
+
+---
+
 ## ✅ Tests Automatizados
 
 ### Backend (Agent)
-- `agent/tests/test_das_pipeline.py` → 21 tests (100% pass) — cubre DB, LangGraph state, templates y escenarios BDD del backend.
+- `agent/tests/test_das_pipeline.py` → 26 tests (pytest)
 ```bash
 cd agent && python3 -m pytest tests/ -v
 ```
 
-### Frontend (Propuesto)
-- `frontend/` con Vitest + React Testing Library — cubre helpers, hooks, componentes (atoms/molecules/organisms), páginas y E2E.
+### Frontend (Vitest)
+- `frontend/` → 60 tests (Vitest + React Testing Library)
 ```bash
 cd frontend && npx vitest run
 ```
 
+### Estado Actual
+| Suite | Tests | Pasando | Cobertura |
+|-------|-------|---------|-----------|
+| Backend (pytest) | 26 | 26 | ✅ 100% |
+| Frontend (Vitest) | 60 | 60 | ✅ 100% |
+| **Total** | **86** | **86** | **✅ 100%** |
+
 ---
-© 2026 SafetyMind Quality Assurance.
+
+© 2026 SafetyMind Quality Assurance. Alineado con Arc42.

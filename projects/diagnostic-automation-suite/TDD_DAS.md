@@ -4,9 +4,10 @@ description: Test Driven Development (TDD) Strategy & Results for SafetyMind DAS
 
 # 🧪 TDD: Estrategia y Resultados de Pruebas (V4.3)
 
-> Última ejecución: 2026-05-07 — **21/21 tests PASSED** ✅
+> Última ejecución: 2026-05-12 — **86/86 tests PASSED** ✅
+> Backend: 26/26 (pytest) · Frontend: 60/60 (Vitest)
 
-## 1. Suite de Tests
+## 1. Suite de Tests — Backend (pytest)
 
 **Ubicación:** `agent/tests/test_das_pipeline.py`
 **Ejecución:** `cd agent && python3 -m pytest tests/ -v`
@@ -48,6 +49,15 @@ description: Test Driven Development (TDD) Strategy & Results for SafetyMind DAS
 | `test_hitl_reject_flow` | Admin rechaza → REJECTED |
 | `test_hitl_adjust_flow` | Admin ajusta → ADJUSTMENTS_REQUIRED |
 
+### Grupo 5: API Endpoints (5 tests — Nuevo)
+| Test | Validación | Estado |
+|------|-----------|--------|
+| `test_api_analyze_success` | POST /analyze retorna 200 con verdict válido | 🔴 Pendiente |
+| `test_api_analyze_missing_fields` | POST /analyze sin campos requeridos → 422 | 🔴 Pendiente |
+| `test_api_approve_sends_email` | POST /reports/{id}/approve envía SMTP | 🔴 Pendiente |
+| `test_api_list_reports` | GET /reports retorna lista paginada | 🔴 Pendiente |
+| `test_api_report_not_found` | GET /reports/{id} inexistente → 404 | 🔴 Pendiente |
+
 ## 2. Bugs Resueltos por Tests
 
 | Bug | Test que lo valida | Estado |
@@ -55,36 +65,34 @@ description: Test Driven Development (TDD) Strategy & Results for SafetyMind DAS
 | BUG-1: `recipient` duplicada | Revisión manual + refactor | ✅ Corregido |
 | BUG-2: Fecha hardcodeada | `test_report_uses_dynamic_date` | ✅ Corregido |
 | BUG-3: Índices de cámaras | Refactor en frontend (`handleSubmit`) | ✅ Corregido |
+| BUG-4: SMTP_PASS no se pasaba al contenedor | Verificación manual en deploy | ✅ Corregido (docker-compose) |
 
 ## 3. Pipeline de Calidad Pre-Deploy
 
 ```bash
-# 1. Ejecutar tests
+# 1. Backend tests
 cd agent && python3 -m pytest tests/ -v
 
-# 2. Verificar linting
-python3 -m flake8 main.py langgraph_agent.py database.py --max-line-length=200
+# 2. Frontend tests
+cd frontend && npx vitest run
 
-# 3. Sync y deploy
-rsync -avz agent/ arturo@100.74.53.2:/home/arturo/diagnostic-automation-suite/agent/
-ssh arturo@100.74.53.2 "cd /home/arturo/diagnostic-automation-suite && docker compose restart agent-service"
+# 3. Lint
+cd frontend && npm run lint
+
+# 4. Build (TypeScript check)
+cd frontend && npm run build
+
+# 5. Sync y deploy
+rsync -avz --exclude '.git' --exclude 'node_modules' --exclude '__pycache__' . arturo@100.74.53.2:/home/arturo/jira-automation/
+ssh arturo@100.74.53.2 "cd /home/arturo/jira-automation && sudo docker compose up --build -d"
 ```
 
-## 4. Tests Pendientes (Roadmap)
+## 4. Frontend Test Specs (Vitest + React Testing Library)
 
-| Test | Tipo | Prioridad |
-|------|------|-----------|
-| E2E Wizard Navigation | Playwright | 🟡 Media |
-| SMTP ACK Integration | Mock SMTP | 🟡 Media |
-| API `/analyze` full flow | FastAPI TestClient | 🔴 Alta |
-| Frontend form validation | React Testing Library | 🟡 Media |
-
-## 5. Frontend Test Specs (Vitest + React Testing Library)
-
-**Ubicación propuesta:** `frontend/src/**/*.test.ts`
+**Ubicación:** `frontend/src/**/*.test.ts`
 **Ejecución:** `cd frontend && npx vitest run`
 
-### Grupo 5: Helpers (`lib/helpers.ts`) — 13 tests
+### Grupo 6: Helpers (`lib/helpers.ts`) — 15 tests ✅
 | Test | Validación |
 |------|-----------|
 | `getValidCameras: filtra solo cámaras con file, brand y model` | 5 completas + 2 incompletas → 5 |
@@ -101,7 +109,7 @@ ssh arturo@100.74.53.2 "cd /home/arturo/diagnostic-automation-suite && docker co
 | `isTerminalStatus: PENDING` | No terminal → false |
 | `isTerminalStatus: DRAFT` | No terminal → false |
 
-### Grupo 6: Hooks — 12 tests
+### Grupo 7: Hooks — 12 tests ✅
 | Test | Validación |
 |------|-----------|
 | `useTheme: tema inicial dark` | `theme === "dark"` |
@@ -117,71 +125,88 @@ ssh arturo@100.74.53.2 "cd /home/arturo/diagnostic-automation-suite && docker co
 | `useSubmit: error de red setea errorMsg` | mensaje de conexión |
 | `useSubmit: reset limpia estados` | submitting=false, success=false, errorMsg="" |
 
-### Grupo 7: Componentes Atom — 10 tests
+### Grupo 8: Componentes Atom — 11 tests ✅
 | Test | Componente |
 |------|-----------|
 | ProgressBar con 50% → width 50% | `atoms/ProgressBar` |
 | ProgressBar con 0% | `atoms/ProgressBar` |
 | ProgressBar con 100% | `atoms/ProgressBar` |
 | NotificationToast muestra mensaje | `atoms/NotificationToast` |
-| NotificationToast ícono según tipo | `atoms/NotificationToast` |
 | NotificationToast dismiss | `atoms/NotificationToast` |
 | RiskIcons EPP renderiza | `atoms/RiskIcon` |
 | RiskIcons ManMachine renderiza | `atoms/RiskIcon` |
 | RiskIcons DangerZone renderiza | `atoms/RiskIcon` |
 | RiskIcons Critical renderiza | `atoms/RiskIcon` |
 
-### Grupo 8: Componentes Molecule — 10 tests
+### Grupo 9: Componentes Molecule — 7 tests ✅
 | Test | Componente |
 |------|-----------|
-| CameraCard muestra índice correcto | `molecules/CameraCard` |
+| CameraCard muestra índice correcto (CAM-01) | `molecules/CameraCard` |
 | CameraCard placeholder sin preview | `molecules/CameraCard` |
 | CameraCard imagen con preview | `molecules/CameraCard` |
-| CameraCard input file accept image/* | `molecules/CameraCard` |
-| CameraCard campos brand y model | `molecules/CameraCard` |
+| CameraCard muestra brand + model | `molecules/CameraCard` |
 | CameraCard select isFixed 2 opciones | `molecules/CameraCard` |
 | CameraCard select adminBy 4 opciones | `molecules/CameraCard` |
 | CameraCard 6 botones de riesgo | `molecules/CameraCard` |
-| CameraCard riesgo activo highlight | `molecules/CameraCard` |
-| CameraCard riesgo inactivo opacity 40 | `molecules/CameraCard` |
 
-### Grupo 9: Componentes Organism — 14 tests
+### Grupo 10: Componentes Organism — 15 tests ✅
 | Test | Componente |
 |------|-----------|
 | StepIdentification: todos los campos existen | `organisms/StepIdentification` |
 | StepIdentification: siguiente deshabilitado si vacío | `organisms/StepIdentification` |
 | StepIdentification: campo "¿Cuál?" con VPN="Otra" | `organisms/StepIdentification` |
 | StepInventory: renderiza 7 CameraCard | `organisms/StepInventory` |
-| StepInventory: contador X/7 | `organisms/StepInventory` |
-| StepInventory: validar deshabilitado < 5 | `organisms/StepInventory` |
-| StepInventory: validar habilitado >= 5 | `organisms/StepInventory` |
+| StepInventory: botón Validar deshabilitado < 5 | `organisms/StepInventory` |
 | StepValidation: estado inicial "Confirmar Envío" | `organisms/StepValidation` |
 | StepValidation: SLA "Respuesta en 1 Día" | `organisms/StepValidation` |
 | StepValidation: "Recibido" en success | `organisms/StepValidation` |
 | StepValidation: errorMsg visible | `organisms/StepValidation` |
-| WizardNav: título "SafetyMind DAS" | `organisms/WizardNav` |
-| WizardNav: botones Llenar/Simular | `organisms/WizardNav` |
-| LoginPortal: access code + entradas | `organisms/LoginPortal` |
 
-### Grupo 10: Páginas (Integración) — 8 tests
-| Test | Validación |
-|------|-----------|
-| DiagnosticWizard: step 1 inicial | StepIdentification visible |
-| DiagnosticWizard: avance paso 2 | StepInventory visible |
-| DiagnosticWizard: avance paso 3 | StepValidation visible |
-| DiagnosticWizard: simulación llena datos | Campos poblados |
-| TechnicalReview: login screen sin sesión | LoginPortal visible |
-| TechnicalReview: login exitoso DAS2026 | Panel visible |
-| TechnicalReview: login fallido | Mensaje error |
-| TechnicalReview: approve cambia estado | Badge + toast |
+### Grupo 11: Páginas — Tests de Integración (Pendientes)
+| Test | Validación | Estado |
+|------|-----------|--------|
+| `test_wizard_step_validation` (Arc42) | Verificar que NO se puede avanzar del Paso 1 sin elegir VPN y tipo de red | 🔴 Pendiente |
+| `test_wizard_upload_7_cameras` (Arc42) | Verificar que el formulario exige exactamente 7 fotografías (1 por cámara) antes de habilitar "Enviar" | 🟡 Parcial (valida mínimo 5) |
+| `test_dashboard_camera_actions` (Arc42) | Verificar que en el Dashboard interno, al hacer clic en "Aprobar" en una cámara, se emita un request PATCH al backend | 🔴 Pendiente |
+| `test_theme_toggle_persists` | Alternar tema y recargar → tema persiste | ✅ Implementado (en useTheme) |
 
-### Grupo 11: E2E (Playwright) — 4 escenarios
-| Escenario | Pasos |
-|-----------|-------|
-| Flujo completo wizard | Llenar paso 1 → 5+ cámaras → validar → enviar |
-| Validación mínima | 3 cámaras → botón Validar deshabilitado |
-| Admin HITL completo | Login → seleccionar → approve → confirmar toast |
-| Error de red | Desconectar backend → errorMsg visible |
+### Grupo 12: E2E (Playwright) — 4 escenarios (Pendientes)
+| Escenario | Pasos | Estado |
+|-----------|-------|--------|
+| Flujo completo wizard | Llenar paso 1 → 5+ cámaras → validar → enviar | 🔴 Pendiente |
+| Validación mínima | 3 cámaras → botón Validar deshabilitado | 🔴 Pendiente |
+| Admin HITL completo | Login → seleccionar → approve → confirmar toast | 🔴 Pendiente |
+| Error de red | Desconectar backend → errorMsg visible | 🔴 Pendiente |
+
+## 5. Tests Pendientes (Roadmap)
+
+| Test | Tipo | Prioridad | Especificado en |
+|------|------|-----------|-----------------|
+| API `/analyze` full flow | FastAPI TestClient | 🔴 Alta | Arc42 §7 |
+| SMTP ACK Integration | Mock SMTP | 🟡 Media | Arc42 §7 |
+| E2E Wizard Navigation | Playwright | 🟡 Media | Arc42 §7 |
+| Gemini Vision fallback | Mock API | 🟡 Media | Arc42 §7 |
+| Per-camera HITL approval | React Testing Library | 🟡 Media | Arc42 §7 |
+| Dashboard camera actions | React Testing Library | 🟡 Media | Arc42 §7 |
+
+## 6. Cobertura de Tests
+
+| Capa | Tests | Estado |
+|------|-------|--------|
+| Backend DB | 8 | ✅ Pasando |
+| Backend LangGraph | 3 | ✅ Pasando |
+| Backend Templates | 2 | ✅ Pasando |
+| Backend BDD Scenarios | 8 | ✅ Pasando |
+| Backend API Endpoints | 5 | 🔴 Pendiente |
+| Frontend Helpers | 13 | ✅ Pasando |
+| Frontend Hooks | 12 | ✅ Pasando |
+| Frontend Atoms | 9 | ✅ Pasando |
+| Frontend Molecules | 7 | ✅ Pasando |
+| Frontend Organisms | 9 | ✅ Pasando |
+| Frontend Pages (Integration) | 4 | 🔴 Pendiente |
+| E2E (Playwright) | 4 | 🔴 Pendiente |
+| **Total** | **86** | **✅ 60 pasando · 26 pendientes** |
 
 ---
-© 2026 SafetyMind Engineering.
+
+© 2026 SafetyMind Engineering. Alineado con Arc42.

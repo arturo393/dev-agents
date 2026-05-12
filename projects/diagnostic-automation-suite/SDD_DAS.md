@@ -87,5 +87,73 @@ graph TB
 - **Admin Auth**: Código de acceso o Google Workspace.
 - **SMTP**: Credenciales via variables de entorno.
 
+## 8. Arquitectura del Frontend
+
+Stack: Next.js 16 (App Router), React 19, TypeScript strict, Tailwind v4, Lucide React.
+
+### Rutas
+
+| Ruta | Página | Propósito |
+|------|--------|-----------|
+| `/` | `DiagnosticWizard` | Wizard de 3 pasos para capturar formulario técnico |
+| `/admin/review` | `TechnicalReview` | Consola de validación HITL (login + editor) |
+| `/api/report/send` | API Route | Proxy que reenvía decisión HITL a n8n |
+
+### Árbol de Componentes
+
+```
+app/page.tsx                          DiagnosticWizard
+  └─ organisms/WizardNav              Nav superior con progreso, simulación, tema
+      └─ atoms/ProgressBar            Barra de progreso 33% / 66% / 100%
+  └─ organisms/StepIdentification     Paso 1: datos de empresa + infraestructura
+  └─ organisms/StepInventory          Paso 2: 7 cámaras con foto, marca, modelo, riesgos
+      └─ molecules/CameraCard ×7      Card individual de cámara
+          └─ atoms/RiskIcons          SVGs de factores de riesgo (estilo señal de tránsito)
+  └─ organisms/StepValidation         Paso 3: resumen + SLA + botón de envío
+
+app/admin/review/page.tsx             TechnicalReview
+  └─ organisms/LoginPortal            Pantalla de login (código DAS + passcode)
+  └─ atoms/NotificationToast          Toast de notificación floating
+```
+
+### Hooks
+
+| Hook | Archivo | Responsabilidad |
+|------|---------|----------------|
+| `useTheme` | `hooks/useTheme.ts` | Persiste y alterna tema dark/light (`sm-theme` en localStorage) |
+| `useSubmit` | `hooks/useSubmit.ts` | Prepara FormData, envía a n8n webhook, maneja estados submitting/success/error |
+
+### Tipos Compartidos (`frontend/src/types/index.ts`)
+
+| Tipo | Campos clave |
+|------|-------------|
+| `CameraData` | id, file, preview, brand, model, isFixed, adminBy, risks[], error |
+| `InfrastructureData` | vpn_client, network_dist, server_location, cooling, is_247, night_lighting |
+| `Diagnostic` | id, client, verdict, score, status, cameras[], risks[] |
+| `RawReportData` | Mapeo crudo de `/reports` del backend |
+
+### Flujo de Datos del Frontend
+
+**Wizard → n8n**: El estado local del formulario (StepIdentification + StepInventory) se serializa como `multipart/form-data` y se envía mediante `POST` al webhook de n8n. Los nombres de campo siguen el formato `camera_N_model`, `camera_N_isfixed`, `camera_N_admin`, `camera_N_risks`.
+
+**Admin Console → Agent API**: La consola HITL consulta `GET /reports` al agente FastAPI para listar diagnósticos pendientes. Las acciones approve/reject/adjust se envían como `POST` a los endpoints del agente.
+
+**HITL → n8n (API Route)**: Adicionalmente, la ruta `/api/report/send` hace de proxy para reenviar la decisión del técnico a n8n.
+
+### Reglas de Validación
+
+| Ubicación | Regla |
+|-----------|-------|
+| `StepIdentification:30-33` | Todos los campos requeridos + campo "¿Cuál?" si VPN=Otra |
+| `helpers.ts:isValidInventory` | `getValidCameras(cameras).length >= MIN_CAMERAS (5)` |
+| `helpers.ts:getValidCameras` | Cámara válida si tiene file, brand y model |
+| `StepInventory:65` | Botón "Validar" deshabilitado si validCount < 5 |
+| `useSubmit:30-33` | Rechazo temprano si `!isValidInventory` |
+
+### SLA en Frontend
+
+- `StepValidation` muestra **"Respuesta en 1 Día"** como SLA garantizado.
+- Mensaje de éxito: "Te hemos enviado un correo de confirmación".
+
 ---
 © 2026 SafetyMind Engineering Division.

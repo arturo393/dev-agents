@@ -79,5 +79,109 @@ ssh arturo@100.74.53.2 "cd /home/arturo/diagnostic-automation-suite && docker co
 | API `/analyze` full flow | FastAPI TestClient | 🔴 Alta |
 | Frontend form validation | React Testing Library | 🟡 Media |
 
+## 5. Frontend Test Specs (Vitest + React Testing Library)
+
+**Ubicación propuesta:** `frontend/src/**/*.test.ts`
+**Ejecución:** `cd frontend && npx vitest run`
+
+### Grupo 5: Helpers (`lib/helpers.ts`) — 13 tests
+| Test | Validación |
+|------|-----------|
+| `getValidCameras: filtra solo cámaras con file, brand y model` | 5 completas + 2 incompletas → 5 |
+| `getValidCameras: cámara sin file no cuenta` | brand+model sin file → excluida |
+| `getValidCameras: cámara sin brand no cuenta` | file+model sin brand → excluida |
+| `getValidCameras: cámara sin model no cuenta` | file+brand sin model → excluida |
+| `isValidInventory: >= 5 retorna true` | 6 válidas → true |
+| `isValidInventory: < 5 retorna false` | 4 válidas → false |
+| `getVerdictColor: VERDE` | `"VERDE"` → variable sm-green |
+| `getVerdictColor: AMARILLO` | `"AMARILLO"` → variable sm-yellow |
+| `getVerdictColor: ROJO` | `"ROJO"` → variable sm-red |
+| `getVerdictColor: default` | `"DESCONOCIDO"` → text-secondary |
+| `isTerminalStatus: APPROVED/REJECTED/ADJUSTMENTS_REQUIRED` | 3 terminales → true |
+| `isTerminalStatus: PENDING` | No terminal → false |
+| `isTerminalStatus: DRAFT` | No terminal → false |
+
+### Grupo 6: Hooks — 12 tests
+| Test | Validación |
+|------|-----------|
+| `useTheme: tema inicial dark` | `theme === "dark"` |
+| `useTheme: toggleTheme dark→light` | dark → light |
+| `useTheme: toggleTheme light→dark` | light → dark |
+| `useTheme: persiste en localStorage` | key `sm-theme` guardada |
+| `useTheme: sincroniza data-theme en <html>` | atributo correcto |
+| `useSubmit: < 5 cámaras no envía` | errorMsg de validación |
+| `useSubmit: construye FormData con client_name` | campo presente |
+| `useSubmit: construye camera_N_risks como JSON` | array serializado |
+| `useSubmit: VPN="Otra" usa vpnOther` | vpn_client = vpnOther |
+| `useSubmit: éxito setea success=true` | setSuccess(true) |
+| `useSubmit: error de red setea errorMsg` | mensaje de conexión |
+| `useSubmit: reset limpia estados` | submitting=false, success=false, errorMsg="" |
+
+### Grupo 7: Componentes Atom — 10 tests
+| Test | Componente |
+|------|-----------|
+| ProgressBar con 50% → width 50% | `atoms/ProgressBar` |
+| ProgressBar con 0% | `atoms/ProgressBar` |
+| ProgressBar con 100% | `atoms/ProgressBar` |
+| NotificationToast muestra mensaje | `atoms/NotificationToast` |
+| NotificationToast ícono según tipo | `atoms/NotificationToast` |
+| NotificationToast dismiss | `atoms/NotificationToast` |
+| RiskIcons EPP renderiza | `atoms/RiskIcon` |
+| RiskIcons ManMachine renderiza | `atoms/RiskIcon` |
+| RiskIcons DangerZone renderiza | `atoms/RiskIcon` |
+| RiskIcons Critical renderiza | `atoms/RiskIcon` |
+
+### Grupo 8: Componentes Molecule — 10 tests
+| Test | Componente |
+|------|-----------|
+| CameraCard muestra índice correcto | `molecules/CameraCard` |
+| CameraCard placeholder sin preview | `molecules/CameraCard` |
+| CameraCard imagen con preview | `molecules/CameraCard` |
+| CameraCard input file accept image/* | `molecules/CameraCard` |
+| CameraCard campos brand y model | `molecules/CameraCard` |
+| CameraCard select isFixed 2 opciones | `molecules/CameraCard` |
+| CameraCard select adminBy 4 opciones | `molecules/CameraCard` |
+| CameraCard 6 botones de riesgo | `molecules/CameraCard` |
+| CameraCard riesgo activo highlight | `molecules/CameraCard` |
+| CameraCard riesgo inactivo opacity 40 | `molecules/CameraCard` |
+
+### Grupo 9: Componentes Organism — 14 tests
+| Test | Componente |
+|------|-----------|
+| StepIdentification: todos los campos existen | `organisms/StepIdentification` |
+| StepIdentification: siguiente deshabilitado si vacío | `organisms/StepIdentification` |
+| StepIdentification: campo "¿Cuál?" con VPN="Otra" | `organisms/StepIdentification` |
+| StepInventory: renderiza 7 CameraCard | `organisms/StepInventory` |
+| StepInventory: contador X/7 | `organisms/StepInventory` |
+| StepInventory: validar deshabilitado < 5 | `organisms/StepInventory` |
+| StepInventory: validar habilitado >= 5 | `organisms/StepInventory` |
+| StepValidation: estado inicial "Confirmar Envío" | `organisms/StepValidation` |
+| StepValidation: SLA "Respuesta en 1 Día" | `organisms/StepValidation` |
+| StepValidation: "Recibido" en success | `organisms/StepValidation` |
+| StepValidation: errorMsg visible | `organisms/StepValidation` |
+| WizardNav: título "SafetyMind DAS" | `organisms/WizardNav` |
+| WizardNav: botones Llenar/Simular | `organisms/WizardNav` |
+| LoginPortal: access code + entradas | `organisms/LoginPortal` |
+
+### Grupo 10: Páginas (Integración) — 8 tests
+| Test | Validación |
+|------|-----------|
+| DiagnosticWizard: step 1 inicial | StepIdentification visible |
+| DiagnosticWizard: avance paso 2 | StepInventory visible |
+| DiagnosticWizard: avance paso 3 | StepValidation visible |
+| DiagnosticWizard: simulación llena datos | Campos poblados |
+| TechnicalReview: login screen sin sesión | LoginPortal visible |
+| TechnicalReview: login exitoso DAS2026 | Panel visible |
+| TechnicalReview: login fallido | Mensaje error |
+| TechnicalReview: approve cambia estado | Badge + toast |
+
+### Grupo 11: E2E (Playwright) — 4 escenarios
+| Escenario | Pasos |
+|-----------|-------|
+| Flujo completo wizard | Llenar paso 1 → 5+ cámaras → validar → enviar |
+| Validación mínima | 3 cámaras → botón Validar deshabilitado |
+| Admin HITL completo | Login → seleccionar → approve → confirmar toast |
+| Error de red | Desconectar backend → errorMsg visible |
+
 ---
 © 2026 SafetyMind Engineering.

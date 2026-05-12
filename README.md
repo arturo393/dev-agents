@@ -6,7 +6,7 @@ Shared agents, workflows, and skills for SafetyMind projects.
 
 ```
 .agents/
-├── shared/                        UI/UX standards, React practices, Git conventions
+├── shared/                        UI/UX standards (ui-standards.md), React, Git
 ├── projects/
 │   ├── diagnostic-automation-suite/   DAS: preventa técnica Seguros Bolívar
 │   ├── infrastructure-monitoring/     Monitoreo multi-cliente Edge AI

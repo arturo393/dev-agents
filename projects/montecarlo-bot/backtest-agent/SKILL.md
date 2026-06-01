@@ -1,18 +1,40 @@
 ---
 name: Backtest Agent
-description: Orchestrates the downloading of historical data and runs the Genetic Algorithm optimization on the remote server.
+description: GA optimization orchestrator. SKILL.md = dynamic review. agent.py = static pipeline.
 ---
 
 # Backtest Agent
 
-This skill is meant to automate the nightly execution of the Genetic Algorithm optimizer.
+1. **SKILL.md** — revisión dinámica del pipeline de optimización
+2. **`python3 agent.py discover`** — descubre servidor, GA status, disk space + corre pipeline
+3. **Aprendizaje** — codificá nuevos failure modes
 
-## Usage
-
-Use the provided script to start the backtest pipeline on the production host (192.168.1.149). This will run the `ga_optimizer` tool located on the server.
+## 1. Revisión Dinámica
 
 ```bash
-./.agent/skills/backtest_agent/scripts/run_backtest.sh
+cd /Users/arturo/development/lumina/monteCarlo/cpp_bot
+# ¿Cómo se configura el GA?
+grep -n 'population\|generation\|mutation\|crossover\|fitness' src/ga_optimizer.cpp | head -15
+
+# ¿Qué symbols optimiza?
+grep -A20 'symbols\|SYMBOLS\|tickers' src/ga_optimizer.cpp | head -20
 ```
 
-If you need to change symbols, duration, or population size, you can edit the script parameters or run the commands manually.
+## 2. Descubrimiento
+
+```bash
+python3 agent.py discover
+```
+
+## 3. Pipeline Estático
+
+```bash
+python3 agent.py backtest
+```
+
+## 4. Aprendizaje
+
+Si descubrís un nuevo error de compilación, límite de hardware, o flag de optimización, codificalo:
+```bash
+echo '# $(date): nuevo failure mode' >> scripts/run_backtest.sh
+```

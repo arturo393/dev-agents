@@ -1,38 +1,50 @@
 ---
 name: Check Server Logs
-description: Fetches and reviews the trading bot logs from the production server (192.168.1.149).
+description: Log fetcher and analyzer. SKILL.md = dynamic log analysis. agent.py = static fetcher.
 ---
 
 # Check Server Logs
 
-This skill is used to quickly retrieve and analyze the log outputs from the production server.
+1. **SKILL.md** — análisis dinámico de logs (patrones, errores, crashes)
+2. **`python3 agent.py discover`** — descubre log files, cuenta errores + fetch
+3. **Aprendizaje** — codificá nuevos patrones de error
 
-## Usage
+## 1. Revisión Dinámica
 
-You can use the helper script `fetch_logs.sh` provided in the `scripts/` directory to fetch the logs without having to remember the SSH password or path.
+```bash
+ssh arturo@100.74.53.2 "
+  # Spikes de error
+  echo '=== Error rate (last 1000 lines) ==='
+  tail -1000 /home/arturo/monteCarlo/data/logs/bot_production.log 2>/dev/null |
+    grep -oP '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}' | sort | uniq -c | tail -10
 
-1.  **To get the default (last 100 lines of bot_production.log):**
-    ```bash
-    ./.agent/skills/check_server_logs/scripts/fetch_logs.sh
-    ```
+  # Rate limiting
+  echo '=== 429 count ==='
+  grep -c '429\|Too Many\|rate.*limit' /home/arturo/monteCarlo/data/logs/bot_production.log 2>/dev/null
 
-2.  **To get a specific number of lines:**
-    ```bash
-    ./.agent/skills/check_server_logs/scripts/fetch_logs.sh 500
-    ```
+  # Crash timeline
+  echo '=== Restarts ==='
+  grep -n 'starting\|Starting\|SIGSEGV\|SIGABRT\|SIGINT' \
+    /home/arturo/monteCarlo/data/logs/bot_production.log 2>/dev/null | tail -10
+"
+```
 
-3.  **To specify a different log file (e.g., trading_bot.log):**
-    ```bash
-    ./.agent/skills/check_server_logs/scripts/fetch_logs.sh 50 trading_bot.log
-    ```
+## 2. Descubrimiento
 
-## Analysis Guide
+```bash
+python3 agent.py discover
+```
 
-After fetching the logs, analyze them to look for:
-- 📋 `POSICIONES ABIERTAS:` to monitor current holdings.
-- 💰 `BALANCE:` updates to track PnL and Equity.
-- ❌ Errors, JSON parsing warnings, or crashes.
-- 🧠 Activity from the GA, Markov, and RL models.
-- ⚙️ Order executions (Hedge Mode status, positionIdx, TP/SL hits).
+## 3. Fetch Estático
 
-**Important:** Read the output of the script carefully to determine the real state of the bot on the production machine.
+```bash
+python3 agent.py fetch_logs           # default: 100 lines
+python3 agent.py --lines 500          # custom lines
+```
+
+## 4. Aprendizaje
+
+Si descubrís un nuevo patrón de error, codificalo:
+```bash
+echo '# $(date): nuevo log pattern' >> scripts/fetch_logs.sh
+```

@@ -1,18 +1,23 @@
-# 🛡️ SafetyMind General UI/UX Agent - Guardian Prime V4.0
+---
+name: SafetyMind Universal Web UI Standard (Guardian Prime)
+description: The unified UI/UX source of truth for all SafetyMind web applications - V4.0
+---
 
-Agente unificado de calidad UI/UX para todo el ecosistema SafetyMind.
+# SafetyMind Universal Web UI Standard - Guardian Prime V4.0
+
+Estándar universal de calidad UI/UX para todo el ecosistema web de SafetyMind.
 
 ## 🎯 Propósito
 
-Agente especializado en revisar que cualquier interfaz de SafetyMind cumpla con:
-- **Guardian Prime Protocol** (Estética industrial)
+Este documento establece los criterios obligatorios para garantizar la concordancia, el layout profesional y la integridad visual en cualquier interfaz de SafetyMind:
+- **SafetyMind Universal Design** (Estética industrial moderna)
 - **WCAG AAA** (Accesibilidad máxima)
 - **Sentinel Compliance** (Cero hardcode, datos reales)
-- **Industrial Standards** (Entornos de planta)
+- **Industrial Standards** (Optimizado para entornos de planta)
 
 ## 🏗️ Aplicaciones Cubiertas
 
-Este agente es invocado por:
+Este estándar es la referencia única para:
 1. `infrastructure_monitoring/` - Monitoreo industrial
 2. `jira-automation/` - Automatización y reportes
 3. `puente_grua/` - Control de grúas industriales
@@ -109,7 +114,7 @@ templates/   → Layouts de Dashboard
 ### Memory Loop
 1. Leer el último `safety-audit-report.md`
 2. Verificar que errores anteriores no han reaparecido
-3. Validar que el diseño cumple Guardian Prime
+3. Validar que el diseño cumple con el SafetyMind Universal Web Standard
 
 ### Human Escalation
 Si un diseño es ambiguo (ej: "este amarillo parece naranja"), solicitar confirmación al USER.
@@ -142,7 +147,7 @@ agent-safetymind-ui-check --project=diagnostic-automation-suite
 ### Auditoría Pre-Deploy
 Antes de cualquier `rsync` o `deploy`:
 1. Ejecutar agente de auditoría UI
-2. Verificar cumplimiento Guardian Prime
+2. Verificar cumplimiento del SafetyMind Universal Web Standard
 3. Validar WCAG AAA
 4. Solo entonces proceder con deploy
 
@@ -168,7 +173,7 @@ Antes de cualquier `rsync` o `deploy`:
 [Lista de menores]
 
 ## Compliance
-- Guardian Prime: ✅/❌
+- SafetyMind Universal Web Standard: ✅/❌
 - WCAG AAA: ✅/❌
 - Sentinel: ✅/❌
 - Industrial Standards: ✅/❌

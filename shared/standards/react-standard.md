@@ -1,4 +1,5 @@
 ---
+name: React Development Standard
 description: SafetyMind React Development Standard - Modern Industrial Frontend
 ---
 

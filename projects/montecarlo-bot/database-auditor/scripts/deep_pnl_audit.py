@@ -7,7 +7,7 @@ import requests
 # Parse .env
 keys = {}
 try:
-    with open('/Users/arturo/development/lumina/monteCarlo/cpp_bot/.env') as f:
+    with open('/home/arturo/monteCarlo/.env') as f:
         for line in f:
             if '=' in line and not line.startswith('#'):
                 k, v = line.strip().split('=', 1)

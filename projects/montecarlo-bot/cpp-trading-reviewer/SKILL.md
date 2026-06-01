@@ -1,48 +1,54 @@
 ---
-name: CPP Trading Reviewer v2.0
-description: Auditor avanzado de código C++ y sistemas de trading algorítmico con análisis estático heurístico.
+name: CPP Trading Reviewer
+description: C++ static analysis, trading safety, distributed systems audit. SKILL.md = dynamic review. agent.py = static analyzer.
 ---
 
-# CPP Trading Reviewer v2.0
+# CPP Trading Reviewer
 
-Este agente avanzado realiza auditorías profundas del bot MonteCarlo, enfocándose en la intersección entre la seguridad financiera y la eficiencia de sistemas de baja latencia.
+1. **SKILL.md** — revisión dinámica de código C++ y patrones de trading
+2. **`python3 agent.py discover`** — descubre archivos, patrones peligrosos, compilador + corre analyzer
+3. **Aprendizaje** — codificá nuevos anti-patrones
 
-## Capacidades de Análisis
-
-### 1. Auditoría de Seguridad Financiera (Financial Integrity)
-- **Check de Redondeo:** Verifica que el `lotSizeFilter` y `priceFilter` de Bybit sean respetados mediante llamadas a `round_qty` y `round_price`.
-- **Análisis de Margin Leakage:** Busca órdenes que puedan quedar abiertas sin Stop Loss o posiciones "fantasmas" no registradas en DB.
-- **Circuit Breaker Check:** Asegura que el bot monitorea el capital total y detiene operaciones ante drawdowns configurados.
-
-### 2. Auditoría Técnica de C++ (Engineering Excellence)
-- **Modern C++ Standards:** Escanea el uso de `new/delete` y sugiere migración a smart pointers (`std::unique_ptr`).
-- **RAII Patterns:** Verifica que los bloqueos de Mutex y conexiones de DB usen el patrón *Resource Acquisition Is Initialization*.
-- **Copy Optimization:** Detecta pasos por valor de contenedores grandes (vectores, mapas) y sugiere `const&`.
-
-### 3. Robustez de Sistemas Distributed
-- **API Error Handling:** Verifica que todas las llamadas de red estén envueltas en bloques `try-catch` específicos.
-- **Database Integrity:** Asegura que las transacciones SQL sean atómicas cuando sea necesario.
-
-## Herramientas Incluidas
-
-### `analyzer.py`
-Un motor de análisis estático basado en Python que genera reportes en formato Markdown con severidades:
-- **Critical:** Riesgo inmediato de pérdida de capital o crash.
-- **High:** Bug lógico severo o mala gestión de memoria.
-- **Medium/Low:** Mejoras de performance o estilo de código.
-
-### `full_audit.sh`
-Script maestro que ejecuta el analizador en todo el proyecto y genera un reporte consolidado.
-
-## Cómo Ejecutar una Auditoría Completa
+## 1. Revisión Dinámica
 
 ```bash
-./.agent/skills/cpp_trading_reviewer/scripts/run_full_audit.sh
+cd /Users/arturo/development/lumina/monteCarlo/cpp_bot
+
+# Financial Integrity
+echo '=== round_qty en órdenes ==='
+grep -n 'round_qty\|round_price\|lot_size\|price_filter' src/*.cpp
+
+echo '=== Stop Loss en cada orden ==='
+grep -B5 'send_order\|place_order' src/*.cpp | grep -c 'stop_loss\|sl\|take_profit\|tp'
+
+# C++ Safety
+echo '=== Raw new/delete ==='
+grep -rn 'new \|delete ' src/*.cpp | grep -v '//\|delete\[\]' | head -15
+
+echo '=== Mutex sin RAII ==='
+grep -rn 'lock()\|unlock()' src/*.cpp | grep -v 'lock_guard\|unique_lock\|scoped_lock'
+
+# Rate limiting
+echo '=== 429 / timeout handling ==='
+grep -rn '429\|too_many\|rate_limit\|retry_after\|backoff\|timeout' src/*.cpp
 ```
 
-## Checklist Premium de Trading
+## 2. Descubrimiento
 
-- [ ] **Slippage Control:** ¿El bot usa precios límite o mercado? ¿Se considera el slippage?
-- [ ] **Order Overlap:** ¿Se verifica si ya hay una orden pendiente antes de enviar una nueva?
-- [ ] **Rate Limiting:** ¿Se maneja el error `Too Many Requests` de Bybit?
-- [ ] **Timeouts:** ¿Las llamadas síncronas tienen un timeout para evitar el bloqueo del main loop?
+```bash
+python3 agent.py discover
+```
+
+## 3. Análisis Estático
+
+```bash
+python3 agent.py full_audit
+python3 agent.py analyzer
+```
+
+## 4. Aprendizaje
+
+Si descubrís un nuevo anti-patrón C++ o de trading, codificalo:
+```bash
+echo '# $(date): nuevo anti-patron' >> scripts/run_full_audit.sh
+```

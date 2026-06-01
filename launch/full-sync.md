@@ -1,4 +1,9 @@
-# 🔱 Skill: SafetyMind Full Sync (Git + Jira + Docs)
+---
+name: SafetyMind Full Sync
+description: End-of-session sync flow that aligns Git, Jira, and documentation for SafetyMind projects.
+---
+
+# Skill: SafetyMind Full Sync (Git + Jira + Docs)
 
 Este flujo es el comando definitivo para cerrar una sesión de trabajo, asegurando que el código, la gestión (Jira) y la documentación estén 100% alineados.
 

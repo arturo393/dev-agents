@@ -1,4 +1,5 @@
 ---
+name: Launching Expert Agent
 description: Launching Expert Agent - Specialized in Deployment, Final Validation, and Production Readiness
 ---
 

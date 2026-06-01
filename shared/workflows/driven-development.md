@@ -1,4 +1,5 @@
 ---
+name: Driven Development (XDD)
 description: SafetyMind XDD Standards - Multi-Paradigm Driven Development (V1.0)
 ---
 

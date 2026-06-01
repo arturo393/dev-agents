@@ -1,4 +1,5 @@
 ---
+name: Testing Architecture Auditor
 description: Testing Architecture Auditor - TDD/BDD/SDD Reviewer (V2.0)
 ---
 

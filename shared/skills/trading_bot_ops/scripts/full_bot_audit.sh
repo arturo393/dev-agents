@@ -2,7 +2,7 @@
 REMOTE_USER="arturo"
 REMOTE_HOST="192.168.1.149"
 REMOTE_HOST_TS="100.74.53.2"
-PASSWORD="Admin.123"
+PASSWORD="${SSH_PASSWORD:?SSH_PASSWORD env var required}"
 REMOTE_DB="/home/arturo/monteCarlo/data/trading_data.db"
 REMOTE_LOG="/home/arturo/monteCarlo/data/logs/bot_production.log"
 MAINTENANCE_LOG="/home/arturo/monteCarlo/cpp_bot/data/logs/maintenance.log"

@@ -1,55 +1,41 @@
 # Agents Documentation
 
-Organized by project to keep concerns separated.
+## UQOMM (`uqomm/agents/`)
+- **uqomm-qa-master** — Orquestador QA multi-fase (security, unit, integration, HWIT)
+- **uqomm-hwit-auditor** — Auditoría Hardware-in-the-Loop (SCPI, USB-TMC, sentinels)
+- **uqomm-qt-designer-auditor** — Auditoría UI Qt/C++ (P1-P12, QSS, brand tokens)
+- **uqomm-gui-web-auditor** — Auditoría UI web (Playwright, WCAG AAA, brand tokens)
+- **uqomm-board-tools** — Board tools, protocolo UART, build FPGA
+- **uqomm-tui-architect** — TUI con FTXUI
+- **uqomm-audit-loop** — Orquestador de auditorías iterativas
+- **uqomm-docs-expert** — Documentación arc42, ADR, C4
+- **fw-ulad** — Firmware ULAD (ADC map, pines, protocolo)
+- **stm32-expert** — STM32 (MISRA, HAL, init sequence, build/flash)
+- **rdss-deploy** — Deploy RDSS (IPs, Docker, secrets, gotchas)
 
-## Structure
+## SafetyMind (`safetymind/`)
+- **infrastructure-monitoring/** — Guardian Prime, codebase auditor, deploy, DWService
+- **jira-automation/** — PMO automation, Jira sync
+- **diagnostic-automation-suite/** — BDD/TDD/SDD para DAS
 
-- `shared/` — shared standards (UI/UX, React, Git, Sanitizer, Testing, Cleanup)
-- `projects/<name>/` — per-project agents and workflows
-- `launch/` — deployment, sync, auditing operations
-- `backup/` — deprecated agents (historic reference)
-- `skills/` — transversal modular skills
-- `workflows/` — methodology walkthroughs (XDD, Sanitizer, Validation, Cleanup)
-- `agents/` — Python base interfaces
+## Personal (`personal/`)
+- **montecarlo-bot/** — Bot trading C++ (auditor, reviewer, DB, backtest, sanitizer, concurrency)
+- **weekly-planner.agent.md** — Planificador semanal Jira (JQL de Arturo)
+- **jira-sync-universal.agent.md** — Sync Git↔Jira universal
 
-## Convention
+## Shared Experts (`shared/experts/`)
+- **xdd/** — atdd, bdd, tdd, ddt, pbt (con ejemplos VLAD/UQOMM)
+- **cpp-engineer** — C++ cross-proyecto (proyectos, build, convenciones)
+- **react-engineer** — React/Next.js con brand tokens UQOMM/SafetyMind
+- **python-monitor** — Python monitor service (paths, funciones, test patterns)
 
-Cada proyecto ve solo su carpeta en `projects/`. Los estándares compartidos están en `shared/`. Si un documento mezcla preocupaciones de múltiples proyectos, refactorizarlo.
+## Shared Skills (`shared/skills/`)
+- **git-jira-sync** — Workflow commit+push+sync Jira
+- **jira-sync** — Jira CLI básico vía mcp-atlassian
+- **repo_sentinel** — CI hook + pre-commit
+- **ui-audit** — Auditoría visual Playwright
+- **infra-monitoring** — Scripts SSH de monitoreo
+- **trading_bot_ops** — Audit completo del bot en producción
 
-## Available Agents
-
-### MonteCarlo Bot (`projects/montecarlo-bot/`)
-- **Bot Functional Auditor** — End-to-end technical audit of all bot modules
-- **CPP Trading Reviewer v2.0** — Advanced C++ static analysis for trading safety
-- **Database Auditor** — SQLite PnL and fee auditing
-- **Check Server Logs** — Remote log retrieval from production
-- **Backtest Agent** — GA optimization orchestrator
-- **Bio-Cognitive Guard** — Human factors, cognitive load, circadian resilience
-- **Runtime Sanitizer** — ASan/UBSan/Valgrind memory safety
-- **Validation (BTD/SDD)** — BDD/TDD/ATT/SDD multi-layer validation
-- **Cleanup Engine** — Dead code removal and repo sanitation
-- **Master Integrator** — Orchestrator that runs all agents and consolidates reports
-
-### Walkthroughs (`workflows/`)
-- **Driven Development (XDD)** — Methodology selector for CDD/TDD/BDD/DDD/ATDD/SDD/STDD
-- **Testing Auditor** — Audits testing practices against chosen XDD methodology
-- **Testing Cycle** — Full cycle: guide → code → audit
-- **Sanitizer Walkthrough** — ASan/UBSan/Valgrind audit procedure
-- **Validation Walkthrough** — BDD/TDD/ATT/SDD layer selector
-- **Cleanup Walkthrough** — Dead code identification and removal procedure
-
-### Shared Standards (`shared/`)
-- **Git Operations** — Semantic commit management
-- **React Development Standard** — SafetyMind React/Next.js standards
-- **UI/UX Standards (Guardian Prime)** — WCAG AAA compliance
-- **Sanitizer Standards** — Memory safety rules for C++ trading bots
-- **Testing Standards** — BDD/TDD/ATT/SDD coverage and format
-- **Cleanup Guidelines** — Dead code and technical debt policies
-
-### Launch (`launch/`)
-- **Launching Expert Agent** — Pre-production validation
-- **Full Sync** — End-of-session Git + Jira + docs alignment
-
-## Testing
-
-Ver `TESTING_GUIDELINES.md` y `workflows/testing-auditor.md`.
+## Shared Standards/Workflows (`shared/standards/`, `shared/workflows/`)
+Ver archivos individuales — políticas (standards) y procedimientos paso a paso (workflows).

@@ -2,7 +2,7 @@
 description: "Orquestador universal de QA para UQOMM. Coordina agentes especialistas (TDD, BDD, ATDD, PBT, DDT) secuencialmente. Detecta tipo de proyecto, ejecuta protocolo de validación, requiere Green Light de cada agente. Para cualquier tarea de refactorización, implementación o validación en cualquier proyecto UQOMM. Triggers: QA, calidad, validar, validación, pruebas, test suite, regresión, release, deploy, refactor seguro, pull request review, auditoría de calidad."
 name: "UQOMM QA Master"
 tools: ["codebase", "edit/editFiles", "runCommands", "terminalLastCommand", "search", "changes", "findTestFiles", "runTests", "testFailure"]
-agents: ["TDD Expert", "BDD Expert", "ATDD Expert", "PBT Expert", "DDT Expert"]
+agents: ["TDD Expert", "BDD Expert", "ATDD Expert", "PBT Expert", "DDT Expert", "UQOMM HWIT Auditor"]
 user-invocable: true
 argument-hint: "Ruta del código a validar + tipo de tarea. Ej: 'shared/sw-vlad-dac-tools/shared/protocol.cpp — refactorización del parser de frames'"
 ---
@@ -67,6 +67,10 @@ Antes de convocar agentes, analiza el código objetivo para determinar **tipo de
 | **Release / Deploy** | ATDD → DDT → PBT | Sequential |
 | **Pull Request review** | TDD → PBT → BDD (si aplica UI) | Sequential |
 | **Embedded firmware** | TDD (off-target) → PBT → DDT | Sequential |
+| **Controlador de instrumento físico** | TDD → PBT → DDT → **HWIT Auditor** | Sequential |
+| **Suite testbench (sw-testbench)** | ATDD → TDD → PBT → DDT → **HWIT Auditor** | Sequential |
+
+> **⚠️ Regla HWIT**: Si el path contiene `controller/`, `suite/`, `health_checker`, o el stack detectado incluye `owon`/`vsg`/`vlad`/`usbtmc`, agregar `UQOMM HWIT Auditor` como **Fase 5** (después de DDT, antes del veredicto final).
 
 ### Paso 0.3 — Modo rápido vs completo
 
@@ -88,14 +92,16 @@ Antes de convocar agentes, analiza el código objetivo para determinar **tipo de
 ### Ciclo de validación
 
 ```
-┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
-│  ATDD   │────▶│   BDD   │────▶│   TDD   │────▶│   PBT   │────▶│   DDT   │
-│ Criterios│    │Comport. │    │ Unit    │    │ Fuzzing │    │  Datos  │
-│ Aceptac. │    │Usuario  │    │ Tests   │    │ Propied.│    │ Masivos │
-└─────────┘     └─────────┘     └─────────┘     └─────────┘     └─────────┘
-     ✅               ✅               ✅               ✅               ✅
-  GREEN ✓         GREEN ✓         GREEN ✓         GREEN ✓         GREEN ✓
+┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌──────────┐
+│  ATDD   │────▶│   BDD   │────▶│   TDD   │────▶│   PBT   │────▶│   DDT   │────▶│  HWIT *  │
+│ Criterios│    │Comport. │    │ Unit    │    │ Fuzzing │    │  Datos  │    │ Hardware │
+│ Aceptac. │    │Usuario  │    │ Tests   │    │ Propied.│    │ Masivos │    │ Integrac.│
+└─────────┘     └─────────┘     └─────────┘     └─────────┘     └─────────┘     └──────────┘
+     ✅               ✅               ✅               ✅               ✅               ✅ *
+  GREEN ✓         GREEN ✓         GREEN ✓         GREEN ✓         GREEN ✓         GREEN ✓ *
 ```
+
+> `* HWIT Auditor` se activa solo cuando el proyecto involucra controladores de instrumentos físicos (ver Paso 0.2).
 
 ---
 
@@ -144,6 +150,17 @@ Antes de convocar agentes, analiza el código objetivo para determinar **tipo de
 
 > **Prompt estándar:**
 > "Diseña un dataset de pruebas para `<path>` que cubra: valores normales, límites, nulos, vacíos, fuera de rango, y combinaciones críticas. Formato: JSON/CSV según el proyecto. Implementa test parametrizado (pytest.mark.parametrize / Catch2 data-driven). Analiza cobertura del dataset propuesto. Entrega: Schema del dataset + Dataset de ejemplo + Test parametrizado + Análisis de cobertura + Casos faltantes + GREEN/RED LIGHT."
+
+---
+
+### HWIT Auditor — Hardware Integration Testing (Fase 5, condicional)
+
+> **⚠️ Solo activar cuando**: path contiene `controller/`, `suite/`, `health_checker`, o stack incluye `owon`/`vsg`/`vlad`/`usbtmc`.
+
+> **Prompt estándar:**
+> "Audita `<path>` con foco en bugs de Capa 3 (hardware real). Ejecuta las 6 categorías: CAT-1 (sentinels SCPI), CAT-2 (timing/sweep), CAT-3 (race conditions recursos exclusivos), CAT-4 (retry/verificación post-comando), CAT-5 (teardown/estado instrumento), CAT-6 (deployment container). Para cada hallazgo indica severidad (🔴 CRÍTICO / 🟠 ALTO / 🟡 MEDIO / 🟢 BAJO) y el fix exacto. Entrega: tabla de hallazgos + veredicto GREEN/RED LIGHT."
+
+**Cuándo saltar HWIT**: si el código no interactúa con instrumentos físicos (ej. algoritmos puros, parsers sin I/O, UI, modelos de datos).
 
 ---
 

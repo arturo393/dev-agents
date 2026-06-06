@@ -55,8 +55,9 @@ API_STATUS=$(ssh ${REMOTE_USER}@${REMOTE_HOST} "curl -s -o /dev/null -w '%{http_
 echo "  Bybit API reachable: ${API_STATUS} ($([ "$API_STATUS" = "200" ] && echo "✅" || echo "❌"))"
 
 BOT_PID=$(ssh ${REMOTE_USER}@${REMOTE_HOST} "pgrep -f trading_bot 2>&1")
-if [ -n "$BOT_PID" ] && [ "$BOT_PID" -eq "$BOT_PID" ] 2>/dev/null; then
-  echo "  Bot PID: ${BOT_PID} ✅"
+if [ -n "$BOT_PID" ]; then
+  BOT_PID_LIST=$(echo "$BOT_PID" | tr '\n' ' ' | xargs)
+  echo "  Bot PID: ${BOT_PID_LIST} ✅"
 else
   echo "  Bot PID: not running ❌"
 fi

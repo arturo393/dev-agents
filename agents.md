@@ -17,6 +17,8 @@
 - **infrastructure-monitoring/** — Guardian Prime, codebase auditor, deploy, DWService
 - **jira-automation/** — PMO automation, Jira sync
 - **diagnostic-automation-suite/** — BDD/TDD/SDD para DAS
+  - **DAS Validation Agent** — Webhook health, agent health, container status, and n8n configuration validation
+  - **DAS Responsive Agent** — Playwright-based viewport responsiveness audit across mobile, tablet, and desktop viewports
 
 ## Personal (`personal/`)
 - **montecarlo-bot/** — Bot trading C++ (auditor, reviewer, DB, backtest, sanitizer, concurrency)

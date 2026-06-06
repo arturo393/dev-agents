@@ -29,12 +29,15 @@ skills/
 - **Validation Walkthrough** (`workflows/validation-walkthrough.md`): BDD/TDD/ATT/SDD layer selector and procedure.
 - **Cleanup Walkthrough** (`workflows/cleanup-walkthrough.md`): Dead code identification and removal procedure.
 
-### projects/montecarlo-bot/
-- **Bio-Cognitive Guard** (`projects/montecarlo-bot/bio-cognitive-guard/SKILL.md`): Human factors and cognitive load auditor.
-- **Runtime Sanitizer** (`projects/montecarlo-bot/runtime-sanitizer/SKILL.md`): ASan/UBSan/Valgrind memory safety.
-- **Validation Agent (BTD/SDD)** (`projects/montecarlo-bot/btd-sdd-validation/SKILL.md`): BDD/TDD/ATT/SDD validation.
-- **Cleanup Engine** (`projects/montecarlo-bot/cleanup-engine/SKILL.md`): Dead code removal and repo sanitation.
-- **Master Integrator** (`projects/montecarlo-bot/master-integrator/SKILL.md`): Orchestrator that runs all agents.
+### safetymind/diagnostic-automation-suite/
+- **DAS Validation Agent** (`safetymind/diagnostic-automation-suite/das-validation/SKILL.md`): Validates webhook health, agent health, container status, and n8n configuration
+
+### personal/montecarlo-bot/
+- **Bio-Cognitive Guard** (`personal/montecarlo-bot/bio-cognitive-guard/SKILL.md`): Human factors and cognitive load auditor.
+- **Runtime Sanitizer** (`personal/montecarlo-bot/runtime-sanitizer/SKILL.md`): ASan/UBSan/Valgrind memory safety.
+- **Validation Agent (BTD/SDD)** (`personal/montecarlo-bot/btd-sdd-validation/SKILL.md`): BDD/TDD/ATT/SDD validation.
+- **Cleanup Engine** (`personal/montecarlo-bot/cleanup-engine/SKILL.md`): Dead code removal and repo sanitation.
+- **Master Integrator** (`personal/montecarlo-bot/master-integrator/SKILL.md`): Orchestrator that runs all agents.
 
 ### shared/
 - **Git Operations** (`shared/git-ops.md`): Git commit and branch management with semantic messages.
@@ -65,7 +68,7 @@ Brief description...
 ```
 
 ## Adding a New Skill
-1. Create a new directory under `skills/` or `projects/<name>/`
+1. Create a new directory under `skills/`, `personal/`, `safetymind/`, or `uqomm/`
 2. Create `SKILL.md` with frontmatter (name + description)
 3. Add any supporting scripts or configs
 4. Update this `skills.md` with the new skill

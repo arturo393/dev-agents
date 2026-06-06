@@ -14,11 +14,11 @@ Fecha: $(date)
 
 EOF
 
-for file in cpp_bot/src/*.cpp cpp_bot/src/*.hpp include/*.hpp; do
+for file in src/*.cpp include/*.hpp; do
     if [ -f "$file" ]; then
         echo "Processing $file..."
         echo "## Análisis de $file" >> "$OUTPUT_FILE"
-        python3 .agent/skills/cpp_trading_reviewer/scripts/analyzer.py "$file" >> "$OUTPUT_FILE"
+        python3 "$(dirname "$0")/analyzer.py" "$file" >> "$OUTPUT_FILE"
         echo -e "\n---\n" >> "$OUTPUT_FILE"
     fi
 done

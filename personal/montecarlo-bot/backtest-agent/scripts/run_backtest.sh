@@ -33,7 +33,7 @@ ssh "${REMOTE_USER}@${REMOTE_HOST}" "ls ${REMOTE_DIR}/cpp_bot/build/ga_optimizer
   exit 1
 }
 
-nohup ssh "${REMOTE_USER}@${REMOTE_HOST}" "cd ${REMOTE_DIR} && nohup ./cpp_bot/build/ga_optimizer > data/logs/ga_optimizer.log 2>&1 &" &
+ssh -f "${REMOTE_USER}@${REMOTE_HOST}" "cd ${REMOTE_DIR} && nohup ./cpp_bot/build/ga_optimizer > data/logs/ga_optimizer.log 2>&1 < /dev/null &"
 
 echo "✅ GA Optimization started on $REMOTE_HOST (PID: $(ssh ${REMOTE_USER}@${REMOTE_HOST} "pgrep -f ga_optimizer" 2>/dev/null))"
 echo "Logs: ${REMOTE_DIR}/data/logs/ga_optimizer.log"

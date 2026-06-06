@@ -1,24 +1,27 @@
-# Strategy Reviewer Agent — Skill Instructions
+---
+name: Quant-Auditor-4D
+description: 4-pillar quantitative strategy auditor (Antifragility, Microstructure, Financial AI, Moneyball) + filter throughput + regime alignment.
+---
 
-This agent is specialized in performing quantitative audits of the trading bot's strategy parameters, active risk filters, and regime-based weights.
+# Quant-Auditor-4D — Strategy Auditor
 
-## Core Workflows
+Combina el pipeline de filtros original con los 4 pilares Quant-Auditor-4D.
 
-1. **Filter Throughput Audit:**
-   - Reads the live log file (`bot_production.log`) on the server.
-   - Calculates the exact throughput and blockage percentage of each filter gate (Statistical Learner, Convexity Filter, Correlation, Spread).
-   - Generates alerts if any filter gate blocks a disproportionate percentage of profitable setups ("death by a thousand filters").
+## Pilares
 
-2. **Regime Weight Alignment:**
-   - Compares the configured weights in `adaptive_weights.json` with the actual realized PnL and Win Rate inside `trade_outcomes` grouped by regime.
-   - Identifies if the bot is losing money in a specific regime due to aggressive trend weights when it should be using mean-reversion, prompting parameter recalibration.
+| # | Pilar | Enfoque |
+|---|-------|---------|
+| 1 | Antifragility (Taleb) | Payoff convexity, liquidity-aware SL, graceful failure, retry resilience |
+| 2 | Microstructure | Price discreteness, tick/LOB, slippage modeling |
+| 3 | Financial AI (López de Prado) | Fractional differentiation, Triple-Barrier, Meta-Labeling, Purged CV |
+| 4 | Moneyball Metrics | Profit Factor, DD duration, regime PnL, hidden alpha variables |
+| + | Filter Throughput | % bloqueado por cada gate (learner, convexity, squeeze, funding) |
+| + | Regime Weights | Alineación weights ↔ PnL real por régimen |
+| + | Risk Safety | Kelly normalization, small-account protection, drawdown circuit |
 
-3. **Risk-Safety Verification:**
-   - Validates that the C++ `RiskManager` has active protections against database win rate percentage representation mismatches and small-account execution limitations.
+## Ejecución
 
-## Command Execution
-
-To execute this agent:
 ```bash
+cd /Users/arturo/development/dev-agents
 python3 projects/montecarlo-bot/strategy-reviewer/agent.py
 ```

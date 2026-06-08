@@ -1,10 +1,13 @@
 ---
-description: "Orquestador universal de QA para UQOMM. Coordina seguridad estática (Fase -1), agentes especialistas (ATDD, BDD, TDD, PBT, DDT) y auditoría de hardware (HWIT). Detecta tipo de proyecto y ejecuta el protocolo completo. Triggers: QA, calidad, validar, pruebas, test suite, regresión, release, deploy, refactor, pull request review, auditoría de calidad, auditoría de seguridad, security audit."
 name: "UQOMM QA Master"
-tools: ["codebase", "edit/editFiles", "runCommands", "terminalLastCommand", "search", "changes", "findTestFiles", "runTests", "testFailure"]
-agents: ["TDD Expert", "BDD Expert", "ATDD Expert", "PBT Expert", "DDT Expert", "UQOMM HWIT Auditor"]
-user-invocable: true
-argument-hint: "Ruta del código a validar + tipo de tarea. Ej: 'shared/sw-vlad-dac-tools/shared/protocol.cpp — refactorización del parser de frames'"
+description: "Orquestador universal de QA para UQOMM. Coordina seguridad estática (Fase -1), agentes especialistas (ATDD, BDD, TDD, PBT, DDT) y auditoría de hardware (HWIT). Detecta tipo de proyecto y ejecuta el protocolo completo. Triggers: QA, calidad, validar, pruebas, test suite, regresión, release, deploy, refactor, pull request review, auditoría de calidad, auditoría de seguridad, security audit."
+mode: primary
+model: "github-copilot/claude-sonnet-4-6"
+permission:
+  read: allow
+  edit: allow
+  bash:
+    "*": ask
 ---
 
 # UQOMM QA Master — Director de Calidad Universal
@@ -260,9 +263,40 @@ Saltar si: el código no interactúa con instrumentos físicos.
 
 ## Comandos de verificación
 ```bash
-pytest tests/ -v --tb=short
-pytest tests/ --hypothesis-show-statistics
+# Python (pytest + Hypothesis)
+cd src/drs_control && pytest -v --tb=short
+cd src/drs_control && pytest --hypothesis-show-statistics
+
+# C++ (Catch2)
 cmake --build <build_dir> -j4 && ctest --output-on-failure
+
+# UI (Playwright)
+cd <repo> && $env:DRS_ADMIN_PASSWORD="Admin.123"; npx playwright test --project=chromium-light-fhd
+```
+
+## Post-Install Verification (DRS)
+
+Ejecutar contra el servidor de pruebas (`192.168.60.141`) después de cada deploy:
+
+```bash
+# 1. Suite completa de unit tests
+cd src/drs_control && pytest -v --tb=line
+# Esperado: 113+ passed, 0 failures (2 pre-existentes conocidos ignorables)
+
+# 2. Suite completa de UI
+cd <repo> && $env:DRS_ADMIN_PASSWORD="Admin.123"; npx playwright test --project=chromium-light-fhd
+# Esperado: 79+ passed, 0 failures
+
+# 3. Verificación específica de frecuencias DMU (board reachable)
+ssh root@192.168.60.141 'docker exec drs-daemon python3 /usr/lib/nagios/plugins/drs_control/drs_control.py 192.168.11.22 dmu_state'
+# Esperado: "frequencies": [819.0, ...]  — valores en MHz, NO divididos por 10000
+
+# 4. Verificación de optical ports (read-before-write preserva board ID)
+# Ejecutar Apply en DMU Config → verificar que board ID no se resetea a 0
+# Monitorear en Icinga Director o via msfb.cgi: cgiNumber=9
+
+# 5. PHP lint (cada archivo modificado antes de deploy)
+ssh root@192.168.60.141 'docker exec drs-icingaweb2 php -l /path/to/file.php'
 ```
 ```
 

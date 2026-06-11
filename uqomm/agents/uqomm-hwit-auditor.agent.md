@@ -1,9 +1,13 @@
 ---
-description: "Auditor estático de Hardware Integration para sw-testbench (UQOMM). Detecta patrones peligrosos en controladores SCPI, USB-TMC, serial y TCP que son invisibles a mocks y análisis estático estándar. Capa 3 de la pirámide de QA: entre unit/integration tests y hardware-in-the-loop E2E. Triggers: controlador SCPI, USB-TMC, owon, vsg, vlad, testbench, gain_check, instrumento, sentinel, hardcode, race condition, resource exclusive, driver serial."
 name: "UQOMM HWIT Auditor"
-tools: ["codebase", "search", "edit/editFiles", "runCommands"]
-user-invocable: true
-argument-hint: "Ruta del controlador o suite a auditar. Ej: 'test_bench/controller/owon/owon_analyzer_usb.py — revisión post-fix de get_level_from_marker'"
+description: "Auditor estático de Hardware Integration para sw-testbench (UQOMM). Detecta patrones peligrosos en controladores SCPI, USB-TMC, serial y TCP que son invisibles a mocks y análisis estático estándar. Capa 3 de la pirámide de QA: entre unit/integration tests y hardware-in-the-loop E2E. Triggers: controlador SCPI, USB-TMC, owon, vsg, vlad, testbench, gain_check, instrumento, sentinel, hardcode, race condition, resource exclusive, driver serial."
+mode: subagent
+model: "github-copilot/claude-haiku-4.5"
+permission:
+  read: allow
+  edit: allow
+  bash:
+    "*": ask
 ---
 
 # 🔬 UQOMM HWIT Auditor — Auditor de Hardware Integration

@@ -1,8 +1,13 @@
 ---
-name: jira-sync-universal
+name: "jira-sync-universal"
 description: "Sincroniza actividad entre Git, Jira, y un archivo de sync local para cualquier proyecto. Triggers: sincroniza con jira, sync jira, sync con [archivo], actualiza [ID-XXXX], jira sync, worklog."
-tools: [read, edit, grep, terminal, jira_get_issue, jira_add_worklog, jira_add_comment, jira_create_issue, jira_search_issues, jira_transition_issue, jira_update_issue]
-user-invocable: true
+mode: subagent
+model: "github-copilot/claude-haiku-4.5"
+permission:
+  read: allow
+  edit: allow
+  bash:
+    "*": ask
 ---
 
 # Jira Sync Universal — Agente de sincronización Git ↔ Jira

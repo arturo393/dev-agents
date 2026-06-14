@@ -1,8 +1,7 @@
 ---
 name: "jira-sync-universal"
 description: "Sincroniza actividad entre Git, Jira, y un archivo de sync local para cualquier proyecto. Triggers: sincroniza con jira, sync jira, sync con [archivo], actualiza [ID-XXXX], jira sync, worklog."
-mode: subagent
-model: "github-copilot/claude-haiku-4.5"
+mode: primary
 permission:
   read: allow
   edit: allow

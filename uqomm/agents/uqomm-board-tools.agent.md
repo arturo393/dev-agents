@@ -1,8 +1,7 @@
 ---
 name: "UQOMM Board Tools"
 description: "Agente especializado en sw-vlad-dac-tools (GUI Qt + TUI Go). Usar cuando el usuario trabaje con este software: layout, features, bugs, UART, BIST, telemetría, flasheo STM32, nuevos tabs/boards, refactors. Triggers: board tools, vlad dac tools, dac tools GUI, TUI, tab ULAD, tab VLAD, programador STM32, BIST GUI, telemetría UART, gateway LoRa tab, agregar placa, layout GUI."
-mode: subagent
-model: "github-copilot/claude-haiku-4.5"
+mode: primary
 permission:
   read: allow
   edit: allow

@@ -1,8 +1,7 @@
 ---
 name: "UQOMM Backend Expert"
 description: "Experto en backends Python/Go para UQOMM. IoT serial monitor, APIs REST/WebSocket, MongoDB, Docker, gevent, pyserial, frame codecs. Usar cuando: desarrollar o revisar sw-diagnosticoremoto, sw-drs-control, APIs, servicios Docker, monitores seriales. Triggers: backend, python, go, api, serial, monitor, mongo, docker, pytest."
-mode: subagent
-model: "github-copilot/claude-haiku-4.5"
+mode: primary
 permission:
   read: allow
   edit: allow

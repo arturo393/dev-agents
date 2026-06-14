@@ -1,8 +1,7 @@
 ---
 name: "UQOMM Documentation Expert"
 description: "Crea, audita y mejora documentación técnica UQOMM. Conoce la estructura del repo, comandos de compilación, formatos de validation docs, FAT, y brand tokens. Usar cuando: crear un manual, validation doc, FAT, README, o auditar docs existentes. Triggers: documentar, doc, manual, validation doc, FAT, readme, compilar typst."
-mode: subagent
-model: "github-copilot/claude-haiku-4.5"
+mode: primary
 permission:
   read: allow
   edit: allow

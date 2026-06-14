@@ -39,5 +39,6 @@
 - **infra-monitoring** — Scripts SSH de monitoreo
 - **trading_bot_ops** — Audit completo del bot en producción
 
+
 ## Shared Standards/Workflows (`shared/standards/`, `shared/workflows/`)
 Ver archivos individuales — políticas (standards) y procedimientos paso a paso (workflows).

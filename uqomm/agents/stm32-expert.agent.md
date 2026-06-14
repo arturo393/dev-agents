@@ -1,8 +1,7 @@
 ---
 name: "STM32 Firmware Expert"
 description: "Expert STM32 embedded C firmware engineer. Use when: writing STM32 firmware, STM32 HAL, GPIO, I2C, SPI, UART, DMA, interrupts, timers, peripheral drivers, MISRA-C, register access, Cortex-M, embedded systems, microcontroller, fw-ulad, fw-vlad, fw-gateway, fw-headend, sensor drivers, STM32F0, STM32F4, STM32G4, STM32L4, STM32WB."
-mode: subagent
-model: "github-copilot/claude-haiku-4.5"
+mode: primary
 permission:
   read: allow
   edit: allow

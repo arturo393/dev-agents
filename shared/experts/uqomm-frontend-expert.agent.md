@@ -1,8 +1,7 @@
 ---
 name: "UQOMM Frontend Expert"
 description: "Experto en frontends UQOMM: React/Next.js (legacy), Rust/Tauri (nuevos proyectos). UI industrial, telemetría en tiempo real, mapas, WCAG 2.2 AAA, brandbook UQOMM. Usar cuando: crear o auditar interfaces web, migrar a Tauri, implementar dashboards de telemetría. Triggers: frontend, react, tauri, rust, ui, web, dashboard, wcag, brandbook."
-mode: subagent
-model: "github-copilot/claude-haiku-4.5"
+mode: primary
 permission:
   read: allow
   edit: allow

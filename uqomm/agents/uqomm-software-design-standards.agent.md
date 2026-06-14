@@ -1,8 +1,7 @@
 ---
 name: "UQOMM Software Design Standards"
 description: "Estándares unificados de diseño para todo software UQOMM: interfaces Web (React), Qt/C++, y TUI (FTXUI). Paleta, componentes, validación, accesibilidad. Usar cuando: crear nueva UI, auditar consistencia visual, estandarizar componentes entre proyectos. Triggers: estándar de diseño, design standards, ui standards, brandbook, paleta UQOMM, P-DASH, P1-P12."
-mode: subagent
-model: "github-copilot/claude-haiku-4.5"
+mode: primary
 permission:
   read: allow
   edit: allow

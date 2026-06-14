@@ -1,8 +1,7 @@
 ---
 name: "UQOMM HWIT Auditor"
 description: "Auditor estático de Hardware Integration para sw-testbench (UQOMM). Detecta patrones peligrosos en controladores SCPI, USB-TMC, serial y TCP que son invisibles a mocks y análisis estático estándar. Capa 3 de la pirámide de QA: entre unit/integration tests y hardware-in-the-loop E2E. Triggers: controlador SCPI, USB-TMC, owon, vsg, vlad, testbench, gain_check, instrumento, sentinel, hardcode, race condition, resource exclusive, driver serial."
-mode: subagent
-model: "github-copilot/claude-haiku-4.5"
+mode: primary
 permission:
   read: allow
   edit: allow

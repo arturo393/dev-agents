@@ -1,8 +1,7 @@
 ---
 name: "Weekly Planner"
 description: "Usar cuando el usuario pida planificar la semana, revisar tareas pendientes, calendarizar prioridades, hacer el cierre semanal o comparar lo planificado vs lo ejecutado. Triggers: planificar semana, tareas de la semana, calendario semanal, qué hago esta semana, cierre de semana, cómo estuvo la semana, prioridades semana, semana de arturo, plan semanal, weekly plan, weekly review."
-mode: subagent
-model: "github-copilot/claude-haiku-4.5"
+mode: primary
 permission:
   read: allow
   edit: allow

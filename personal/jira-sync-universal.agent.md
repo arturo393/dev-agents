@@ -17,99 +17,44 @@ permission:
 
 | Parámetro | Obligatorio | Descripción |
 |-----------|:----------:|-------------|
-| `sync_file` | ✅ | Ruta al archivo de sync (ej. `docs/AGENT_SYNC.md`, `jira/ID-1374-sync.md`) |
-| `issue_key` | ✅ | Clave Jira a sincronizar (ej. `ID-1374`, `ID-1373`) |
+| `sync_file` | ❌ | Ruta al archivo de sync (ej. `docs/AGENT_SYNC.md`, `jira/ID-1374-sync.md`). **Si no se pasa, el agente busca automáticamente en `jira/`.** |
+| `issue_key` | ❌ | Clave Jira a sincronizar (ej. `ID-1374`, `ID-1373`). **Si no se pasa, se infiere del sync file o del contexto.** |
 | `work_desc` | ❌ | Descripción del trabajo realizado (si no se infiere de git) |
 | `hours` | ❌ | Horas trabajadas (si no se infieren) |
 
+---
+
 ## Flujo de ejecución
 
-### Paso 0 — Leer configuración desde el archivo de sync
+### 0. Descubrir contexto
+- Si no hay `sync_file` ni `issue_key`: buscar `jira/ID-*.md` en el repo. Si hay 1, usarlo. Si múltiples, inferir del último commit (`git log -1 --name-only \| grep -oP 'ID-\d+'`). Si no hay, crear sync file nuevo.
 
-Leer `sync_file`. Extraer de sus metadatos:
+### 1. Leer sync file + recopilar trabajo
+- Extraer: Jira parent, epic, repo activo, subtareas conocidas, worklogs previos.
+- `git log --oneline -20` desde último sync + `git status`. Clasificar commits en bloques temáticos.
 
-- **Jira parent**: clave del issue padre (ej. `ID-1374`)
-- **Epic**: clave de la épica (ej. `ID-1291`)
-- **Repositorio(s)**: rutas dentro del workspace
-- **Rama activa**: branch principal de trabajo
-- **Subtareas conocidas**: tabla de `| Key | Resumen | Estado |` si existe
-- **Formato de worklogs**: sección de worklogs previos
+### 2. Consultar Jira + clasificar trabajo
+- `jira_get_issue(issue_key)` → estado, subtareas, tiempo, asignado.
+- Por cada bloque: si encaja en subtarea En curso → worklog ahí; si Finalizada → crear nueva; si menciona `ID-XXXX` específico → priorizar esa.
 
-> Si el archivo no tiene estos metadatos → inferirlos consultando Jira y git.
+### 3. Crear sync file si no existe
+Estructura mínima: metadatos (Epic, Proyecto, Rama, Repo) + tabla Subtareas + tabla Worklogs.
 
-### Paso 1 — Recopilar trabajo reciente
+### 4. Crear subtareas (si aplica) + registrar worklogs
+- `jira_create_issue(project, issuetype="Subtarea", parentKey, summary, description)`
+- `jira_add_worklog(issueKey, timeSpent, comment)` — 1 worklog por bloque, idioma del sync file, estimar horas de commits si no se especificó.
 
-```bash
-cd <repo> && git log --oneline -15 && git status --short
-```
+### 5. Sincronizar Jira (estado, fechas, labels, comentarios)
+- Estado → "Revisión"/"Finalizada" si completo, "En curso" si activo.
+- Start/due date, labels, comentario con resumen y commits.
+- `jira_add_comment`, `jira_update_issue`, `jira_transition_issue` según corresponda.
 
-Clasificar commits no sincronizados:
-- `feat:` / `fix:` / `docs:` / `chore:` → bloques de trabajo
-- Agrupar commits relacionados en bloques temáticos
+### 6. Actualizar sync file + commit
+- Actualizar tabla de subtareas desde Jira, agregar worklogs, nueva sesión.
+- `git add + commit -m "docs: sync <issue_key> — <resumen>" + git push`
 
-### Paso 2 — Consultar estado Jira actual
-
-```
-jira_get_issue("<issue_key>")
-```
-
-Extraer: estado, subtareas (si es padre), tiempo registrado, asignado, vencimiento.
-
-Si el issue es tipo `Epic` o tiene subtareas → obtener la lista completa de hijos.
-
-### Paso 3 — Clasificar trabajo nuevo contra subtareas
-
-Para cada bloque de trabajo:
-
-| Situación | Acción |
-|-----------|--------|
-| Encaja en subtarea existente **En curso** | Agregar worklog a esa subtarea |
-| Encaja en subtarea **Finalizada** | Crear nueva subtarea (no reabrir) |
-| Trabajo nuevo sin categoría | Crear subtarea bajo el issue padre |
-| Trabajo directamente sobre el issue padre | Worklog al issue principal |
-
-### Paso 4 — Crear subtareas si es necesario
-
-```
-jira_create_issue(
-  project="<extraído del issue_key>",
-  issuetype="Subtarea",
-  parentKey="<issue_key>",
-  summary="<título conciso>",
-  description="<componentes, archivos, decisiones>"
-)
-```
-
-### Paso 5 — Registrar worklogs
-
-```
-jira_add_worklog(
-  issueKey="<ID-XXXX>",
-  timeSpent="<Xh Ym>",
-  comment="<descripción en español: qué, cómo, resultado>"
-)
-```
-
-Reglas:
-- 1 worklog por bloque temático (no mezclar áreas)
-- Si el usuario no especificó horas → estimar del volumen de commits
-- Usar lenguaje del archivo de sync (español si está en español)
-
-### Paso 6 — Actualizar archivo de sync
-
-Editar `sync_file`:
-1. Si tiene tabla de subtareas → actualizar estados
-2. Agregar entradas de worklog en la tabla correspondiente
-3. Actualizar sección TL;DR o estado general si existe
-4. Agregar nueva sesión con fecha y resumen
-
-### Paso 7 — Resumen final
-
-Producir tabla con:
-- Worklogs agregados (issue, tiempo, descripción)
-- Subtareas creadas (si las hay)
-- Archivo sync actualizado
-- Commits sincronizados
+### 7. Resumen final
+Worklogs agregados, subtareas creadas, estado Jira, sync file actualizado, commits sincronizados.
 
 ---
 
@@ -122,56 +67,16 @@ Producir tabla con:
 - **Idioma del worklog = idioma del archivo de sync** (español por defecto para proyectos UQOMM).
 - **Zona horaria**: `America/Santiago` (`-0400`).
 - **Formato de horas**: `Xh Ym` (ej. `2h 30m`, `45m`, `1h`).
+- **Auto-descubrimiento**: si no se pasa `sync_file`, buscar en `jira/ID-*.md`. Si no existe, crear uno.
+- **Contexto desde git**: extraer `ID-XXXX` de los mensajes de commit para determinar a qué tarea pertenece el trabajo.
+- **Sync completo**: no solo worklogs — también estado, fechas, labels, comentarios, subtareas, y push a GitHub.
 
 ---
 
-## Ejemplo de sync file mínimo
+## Formato del archivo de sync
 
-```markdown
-# Jira Sync — ID-XXXX: Título del issue
-
-> Epic: ID-YYYY — Nombre de la épica
-> Proyecto: I+D+S (`ID`)
-> Rama activa: `nombre-rama`
-> Repo: `path/dentro/del/workspace`
-
-## Subtareas
-
-| Key | Resumen | Estado |
-|-----|---------|--------|
-| ID-XXXX | ... | 🔄 En curso |
-
-## Worklogs
-
-| Fecha | Issue | Tiempo | Descripción |
-|-------|-------|--------|-------------|
-| ... | ... | ... | ... |
-```
-
----
+Ver `jira/ID-1386-sync.md` como referencia. Estructura: metadatos (Epic, Proyecto, Estado), subtareas (tabla Key|Resumen|Estado), worklogs (tabla Fecha|Issue|Tiempo|Descripción), resumen de cambios por sesión.
 
 ## Modo resumen BBDD (`output=resumen`)
 
-Si el usuario pide resumen de avances, briefing ejecutivo, o informe para BBDD, generar en lugar de la tabla técnica:
-
-**Reglas:** español simple y directo, sin términos técnicos, solo hechos verificables, sin archivos/rutas/hashes, un párrafo por período, cierra con estado actual y pendiente clave.
-
-**Plantilla:**
-```
-DD/MM  Se avanzó en <área o funcionalidad>, logrando <resultado concreto>.
-       Se validó mediante <evidencia resumida>.
-       Queda pendiente <pendiente clave> y el estado general es <estado>.
-```
-
----
-
-## Diferencias con otros agentes de sync
-
-| Característica | `jira-1374-sync` (viejo) | `jira-sync` (DRSMON) | **`jira-sync-universal`** |
-|---|---|---|---|
-| Proyecto | Hardcodeado a ID-1374 | Hardcodeado a DRSMON | **Lo lee del sync file** |
-| Sync file | Fijo `jira/ID-1374-sync.md` | No usa sync file | **Parámetro `sync_file`** |
-| Worklogs | Manual | Via PowerShell | **Automático desde git** |
-| Subtareas | Lista hardcodeada | No maneja | **Consulta Jira real** |
-| Idioma | Español | Inglés | **Auto-detecta del sync file** |
-| Creación de issues | ✅ | ❌ | ✅ |
+Español simple, sin tecnicismos, un párrafo por período, cierra con estado actual y pendiente clave.

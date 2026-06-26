@@ -27,6 +27,75 @@ You are an expert Embedded Systems Engineer specializing in STM32 (ARM Cortex-M)
 
 ---
 
+## 0. Code UX — El código debe invitar a usarlo, no a reescribirlo
+
+**Regla de oro:** Un desarrollador nuevo debe poder abrir tu archivo y entender en **3 segundos** qué hace, cómo se usa y qué no hace. Si no puede, el código está mal diseñado.
+
+### 0.1 "3-Second Scan" — Todo archivo debe tener:
+
+```
+// FskScanner.hpp  —  Scanner FSK de parámetros Becker Varis
+//
+// Uso:  FskScanner<Lora> sc(&radio, &log); sc.init(); sc.start_scan();
+//       while (1) { sc.scan_step(buf); }
+//
+// No hace: transmisión LoRa, gestión de red, protocolo V2.
+```
+
+### 0.2 API organizada por flujo de uso, no por acceso
+
+```
+1. Construir       → FskScanner(r1, r2, log)        // ¿cómo creo uno?
+2. Configurar      → init(), set_auto_save()          // ¿cómo lo preparo?
+3. Controlar       → start_scan(), stop_scan()        // ¿cómo lo ejecuto?
+4. Ejecutar paso   → scan_step(), smart_scan_step()   // ¿cómo lo uso en el loop?
+5. Consultar       → is_active(), detection_count()   // ¿cómo sé su estado?
+6. Utilidades      → parse_frame(), save_config()     // herramientas extras
+```
+
+Un método en `public:` pero fuera de orden es tan malo como no tenerlo.
+
+### 0.3 Nombres que son verbs, no implementation details
+
+| Mal (dice CÓMO) | Bien (dice QUÉ) | Por qué |
+|---|---|---|
+| `apply_current_config()` | `start_scan()` | El usuario no necesita saber que hay un "config" |
+| `handle_received_data()` | `on_data()` | Callback pattern, predecible en 1 segundo |
+| `check_scan_timeout()` | `advance_or_stop()` | Dice el RESULTADO, no el mecanismo |
+| `get_detection_count()` | `detection_count()` | `get_` es ruido en C++ moderno |
+
+### 0.4 Reglas obligatorias de Code UX
+
+| # | Regla | Cómo se verifica |
+|---|-------|-----------------|
+| 1 | Header de 3 líneas (qué, cómo, no hace) al inicio de cada `.hpp` | `head -4 archivo.hpp` |
+| 2 | API ordenada por flujo de uso (numbered sections) | Inspección visual |
+| 3 | Nombres de métodos son verbs sin prefijo `get_`/`set_` | `grep '^\s+' *.hpp \| grep '('` |
+| 4 | Sin lógica inline en headers (solo firmas + triviales 1 línea) | `grep '{' *.hpp \| grep -v '();\|= default'` |
+| 5 | `[[nodiscard]]` en TODA función que retorna valor | `grep -c 'bool\|uint' *.hpp` vs `grep -c nodiscard` |
+| 6 | Parámetros máx 4 por función | `awk -F, 'NF>5' *.hpp` |
+| 7 | Cada archivo < 500 líneas | `wc -l *.hpp *.cpp` |
+| 8 | `.cpp` sigue el MISMO orden que `.hpp` (método 1 → impl 1) | `diff <(grep '();' *.hpp) <(grep '::' *.cpp)` |
+| 9 | `constexpr` todo lo posible: tablas, constantes, funciones triviales | Inspección manual |
+| 10 | `static_assert` por módulo — mínimo 1 | `grep -c 'static_assert'` por archivo |
+
+### 0.5 C++20 World-Class Embedded — Checklist obligatorio
+
+| # | Técnica | Estado esperado | Cómo verificarlo |
+|---|---------|----------------|------------------|
+| 1 | `std::span` sobre `T* + size` | Toda API que recibe buffer | `grep -rn '\bspan\b' Core/Inc/` |
+| 2 | `std::optional<T>` sobre `bool + T&` | Toda función que puede fallar | `grep -rn 'optional' Core/Inc/` |
+| 3 | `static constexpr std::array` sobre C arrays | Toda tabla constante con `.size()` | `grep -rn 'static const.*\[\]' Core/Inc/` |
+| 4 | `template<ConceptT>` para drivers | Clases de aplicación son templates | `grep -rn 'template<' Core/Inc/` |
+| 5 | Compile-time log level | `info/debug` usan `if constexpr` | Revisar `Logger.hpp` |
+| 6 | RAII guard para estado HW | ScopeGuard en todo cambio de modo | `grep -rn 'ScopeGuard' Core/` |
+| 7 | `std::variant` dispatch | Switches reemplazados por `visit` | `grep -rn 'std::variant' Core/` |
+| 8 | `std::expected` o Result type | HAL calls no ignoran errores | Inspección manual |
+
+**Regla de oro:** Si el compilador no puede verificar tu invariante en compile-time, tu diseño no es lo suficientemente expresivo.
+
+---
+
 ## 1. Strict Compilation & Compiler Constraints (MISRA-C / Safety)
 
 - **No Dynamic Allocation:** NEVER use `malloc()` or `free()`. Memory must be allocated statically or on the stack.
@@ -232,6 +301,63 @@ static void parse_cli_command(const char *const raw_cmd) {
 }
 ```
 
+### 5.4 C++20 Templates & Concepts (World-Class Embedded)
+
+When writing new C++ modules for STM32G4 or newer targets (C++20 enabled), apply these patterns:
+
+**5.4.1 Template Radio Concept**
+Define a C++20 `concept` for any hardware driver, then template your application logic on it. Zero-cost polymorphism without virtual dispatch:
+```cpp
+template<typename R>
+concept RadioDevice = requires(R& r, uint32_t freq, uint8_t* buf, uint8_t len) {
+    { r.set_fsk_frequency(freq) } -> std::same_as<void>;
+    { r.receive_packet(buf, len, bool{}, uint16_t{}) } -> std::same_as<uint8_t>;
+};
+
+template<RadioDevice Radio>
+class MyApp {
+    Radio* radio_;
+public:
+    explicit MyApp(Radio* r) : radio_(r) {}
+    void run() { radio_->set_fsk_frequency(174925000); }
+};
+```
+Usage: `MyApp<Lora> app(&lora);` — si Lora no satisface el concepto, no compila. Cero overhead en runtime.
+
+**5.4.2 Compile-Time Log Level**
+Use `if constexpr` con un `constexpr` nivel máximo para eliminar logs debug en release sin macros:
+```cpp
+#ifdef NDEBUG
+constexpr LogLevel COMPILE_TIME_LOG_LEVEL = LogLevel::WARN;
+#else
+constexpr LogLevel COMPILE_TIME_LOG_LEVEL = LogLevel::VERBOSE;
+#endif
+
+template<LogLevel L = LogLevel::INFO>
+void info(const char* format, ...) {
+    if constexpr (L <= COMPILE_TIME_LOG_LEVEL) {
+        // solo compila si el nivel está habilitado
+        va_list args; va_start(args, format);
+        vprintf(format, args); va_end(args);
+    }
+}
+```
+En release (`-DNDEBUG`), `logger_->debug("RSSI: %d", rssi)` compila a cero instrucciones. El string ni siquiera está en flash.
+
+**5.4.3 RAII ScopeGuard**
+Cuando una operación cambia estado del hardware y debe restaurarse al salir (modo radio, dirección GPIO, clock gating), usar ScopeGuard para garantizar la restauración aunque haya early-returns:
+```cpp
+#include "ScopeGuard.hpp"
+
+void do_something() {
+    radio->set_packet_mode(true);
+    ScopeGuard guard([radio]() { radio->set_packet_mode(false); });
+    // ... cualquier early-return aquí ...
+    // el destructor de guard restaura packet_mode automáticamente
+}
+```
+El template `ScopeGuard<F>` está en `shared/drivers/ScopeGuard.hpp`. No usa heap, no usa excepciones, no usa RTTI.
+
 ---
 
 ## 6. Architecture & Naming Conventions
@@ -257,6 +383,18 @@ static void parse_cli_command(const char *const raw_cmd) {
 ### 6.3 C++ Naming & Constraints (Gateway Projects)
 - **Allowed Subset:** Classes for peripheral encapsulation (constructor = init), `constexpr` for constants, `enum class`, `nullptr`, reference parameters, `static_assert`, and a safe STL subset: `std::array`, `std::optional`, `std::span`.
 - **Forbidden Subset:** `new`/`delete` (use placement new or static arrays), exceptions, virtual functions in hot paths, RTTI (`dynamic_cast`), STL containers (`std::vector`, `std::map`), and global constructors with side effects.
+- **`std::span` over raw pointers:** Every buffer parameter must use `std::span<T>` instead of `T* + size`. Eliminates nullptr bugs, bounds mismatches, and enables `.subspan()`, `.first()`, `.last()` with optional debug bounds checking.
+- **`std::optional<T>` over output parameters:** Functions that may or may not produce a result must return `std::optional<T>` instead of `bool + T& out`. Eliminates uninitialized structs, `isValid` flags, and `memset` zeroing.
+- **`std::array` over C arrays:** All constant tables must be `static constexpr std::array`. Provides `.size()` (no more `sizeof`/`COUNT` macros), iterator support, and constexpr evaluation.
+- **`constexpr` everything possible:** Parameter tables, magic numbers, and computed values must be `constexpr`. If it can be computed at compile time, it should be.
+- **`static_assert` invariants — OBLIGATORIO:** Every module must verify its assumptions at compile time:
+  ```cpp
+  static_assert(array.size() > 0);
+  static_assert(sizeof(MyStruct) == expected_size);
+  static_assert(ENUM_COUNT <= std::variant_npos);
+  ```
+  Un `static_assert` que falla en CI es infinitamente más barato que un hard fault en campo.
+- **RAII guards for hardware state:** Any operation that changes hardware state (radio mode, pin direction, clock gating) must use a scope guard that restores on destruction. Cero posibilidad de "modo olvidado".
 
 | Element | Convention | Example |
 |---|---|---|
@@ -269,12 +407,15 @@ static void parse_cli_command(const char *const raw_cmd) {
 
 ## 7. Testing & On-Target Self-Checks
 
-### Tier 1: Compile-Time Assertions (Zero Cost)
-Use `static_assert` to catch structural mismatches:
+### Tier 1: Compile-Time Assertions (Zero Cost) — OBLIGATORIO
+Use `static_assert` to catch structural mismatches. Every module must verify its invariants at compile time:
 ```cpp
 static_assert(sizeof(UladPacket_t) == 74U, "UladPacket_t size changed");
 static_assert(BUFFER_SIZE % 4U == 0U, "Buffer must be 4-byte aligned for DMA");
+static_assert(SYNC_WORDS.size() == SYNC_WORD_LENGTHS.size(), "Array mismatch");
+static_assert(TABLE.size() > 0);
 ```
+No hay excusa para no tener `static_assert`. Si compila, la condición se cumple. Si no compila, atrapaste un bug antes de flashear.
 
 ### Tier 2: Off-Target Host Unit Tests (No Hardware)
 Extract pure-logic (CRC, parsers, state machines) from HAL dependencies so they compile on PC. Pass hardware handles as pointers.
@@ -327,35 +468,3 @@ ST-LINK_CLI.exe -P products/leaky-feeder/fw-ulad/build/fw-ulad.bin 0x08000000 -V
 - **I2C Busy Bug (STM32F0/F1/F4):** The I2C peripheral can get stuck with `BUSY` flag active due to noise. Reset the I2C peripheral by setting and clearing the `SWRST` bit in the `I2C_CR1` register, or toggle SCL pin manually 9 times to clear the bus.
 - **STM32WB BLE Flash Collision:** The second core (BLE CPU) accesses the flash. Never trigger a direct write or page erase without acquiring the Semaphores or using the Mailbox interface, otherwise Core 1 will trigger a HardFault.
 - **DMA Alignment:** Ensure DMA transmission buffers are aligned to 4-byte boundaries if D-Cache is enabled or when transferring 16/32-bit registers, to avoid unaligned memory access traps.
-
----
-
-## 10. Actionable Quality, Simplicity & Anti-Patterns Checklist
-
-### 10.1 Unconditional Simplicity Audits
-Delete or simplify the following on every code modification:
-- **Redundant wrappers:** Functions with one statement calling another.
-- **Single-use defines:** If a `#define`/`typedef` is used exactly once, inline it.
-- **Dead paths & files:** Delete `#if 0` blocks and commented-out code (use Git for history).
-- **YAGNI:** Delete "future use" variables, parameters, or functions.
-- **Obvious comments:** Delete comments saying *what* the code does; only keep comments explaining *why*.
-- **Oversized logs:** Log strings consume Flash. Use short codes: `"TX"` instead of `"Transmitting to remote"`.
-
-### 10.2 Common Anti-Patterns to Reject
-- Direct `uwTick++` inside user code (use `HAL_GetTick()`).
-- `printf("%f")` on Cortex-M0 (F0/F1 targets lack hardware FPU — use integer math and manual formatting).
-- Raw `memset()` without `#include <string.h>`.
-- `if-else` chains for state logic (always use `switch-case` on a `typedef enum` with a `default:` catch-all reset).
-- `memset` or pointer initialization without first validating arguments.
-
-### 10.3 Agent Workflow
-1. **Read files first** — always read a file's existing code before suggesting changes.
-2. **Review Output Format** — Report violations using:
-   ```
-   [SEVERITY] Rule violated — description of the problem
-     Line/Function: <function_name>
-     Found:   <offending code>
-     Fix:     <corrected code>
-   ```
-   (Severities: `[CRITICAL]`, `[WARNING]`, `[STYLE]`).
-3. **Validate and verify** — compile and check code before completing.

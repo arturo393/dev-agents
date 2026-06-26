@@ -25,26 +25,18 @@ skills/
 - **Driven Development (XDD)** (`workflows/driven-development.md`): Multi-paradigm driven development methodology selector.
 - **Testing Architecture Auditor** (`workflows/testing-auditor.md`): Audits and enforces pragmatic testing practices.
 - **Testing Cycle Orchestrator** (`workflows/testing-cycle.md`): Orchestrates the full testing cycle.
-- **Sanitizer Walkthrough** (`workflows/sanitizer-walkthrough.md`): ASan/UBSan/Valgrind audit procedure.
-- **Validation Walkthrough** (`workflows/validation-walkthrough.md`): BDD/TDD/ATT/SDD layer selector and procedure.
-- **Cleanup Walkthrough** (`workflows/cleanup-walkthrough.md`): Dead code identification and removal procedure.
 
 ### safetymind/diagnostic-automation-suite/
 - **DAS Validation Agent** (`safetymind/diagnostic-automation-suite/das-validation/SKILL.md`): Validates webhook health, agent health, container status, and n8n configuration
 
 ### personal/montecarlo-bot/
-- **Bio-Cognitive Guard** (`personal/montecarlo-bot/bio-cognitive-guard/SKILL.md`): Human factors and cognitive load auditor.
-- **Runtime Sanitizer** (`personal/montecarlo-bot/runtime-sanitizer/SKILL.md`): ASan/UBSan/Valgrind memory safety.
-- **Validation Agent (BTD/SDD)** (`personal/montecarlo-bot/btd-sdd-validation/SKILL.md`): BDD/TDD/ATT/SDD validation.
-- **Cleanup Engine** (`personal/montecarlo-bot/cleanup-engine/SKILL.md`): Dead code removal and repo sanitation.
-- **Master Integrator** (`personal/montecarlo-bot/master-integrator/SKILL.md`): Orchestrator that runs all agents.
+- **Master Integrator** (`personal/montecarlo-bot/master-integrator/SKILL.md`): Orchestrates bot validation (archived 12 sub-agents in `_archived/montecarlo-subagents/`).
 
 ### shared/
 - **Git Operations** (`shared/git-ops.md`): Git commit and branch management with semantic messages.
 - **React Development Standard** (`shared/react-standard.md`): SafetyMind React/Next.js development standards.
 - **UI/UX Standards (Guardian Prime)** (`shared/ui-standards.md`): Unified UI/UX quality standards.
-- **Sanitizer Standards** (`shared/sanitizer-standards.md`): Memory safety rules for C++ trading bots.
-- **Testing Standards** (`shared/testing-standards.md`): BDD/TDD/ATT/SDD coverage and format standards.
+- **Sanitizer Standards** (`shared/sanitizer-standards.md`): Memory safety rules for C++ (ASan/UBSan/Valgrind).
 - **Cleanup Guidelines** (`shared/cleanup-guidelines.md`): Dead code and technical debt policies.
 
 ### launch/

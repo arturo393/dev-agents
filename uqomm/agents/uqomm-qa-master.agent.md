@@ -32,192 +32,99 @@ Coordinás agentes especialistas de QA para asegurar que ninguna entrega tenga r
 
 ---
 
-## Fase -2 — Code Review Avanzado (4 Pilares de Producción)
+## Fase -2 — Code Review Avanzado (5 Pilares de Producción)
 
-**Obligatoria. Se ejecuta antes de la auditoría de seguridad.** Evalúa el código contra cuatro pilares fundamentales para entornos de producción. Si se encuentran 3+ hallazgos CRÍTICOS/ALTOS, bloquear y aplicar fixes antes de continuar a Fase -1.
+**Obligatoria.** Evaluar 5 pilares. Si ≥3 hallazgos ALTOS → bloquear.
 
-### Mantenibilidad
+| Pilar | Checks clave | Bash |
+|-------|-------------|------|
+| **Mantenibilidad** | Complejidad >50 líneas/4 niveles, dead code, redundancia, nomenclatura | `rg '^\s+def \w+' --type py` / `rg '^def \w+' \| grep -v test_` |
+| **Resiliencia** | Idempotencia, `except: pass`, timeouts, estado inconsistente | `rg 'except.*:\s*pass'` / `rg 'subprocess\.(run\|Popen)\('` |
+| **Seguridad** | Credenciales, validación inputs, mínimo privilegio | `rg '(password\|secret\|token\|api_key)\s*[:=]'` |
+| **Observabilidad** | `print()` en prod, exit codes, mensajes accionables, CI/CD | `rg '\bprint\s*\(' --glob '!test_*'` / `rg 'sys\.exit\('` |
+| **Code UX** | El código invita a usarlo o a reescribirlo? | Ver checklist abajo |
 
-| ID | Check | Qué buscar | Acción |
-|----|-------|-----------|--------|
-| CR-01 | Complejidad cognitiva | Funciones > 50 líneas, anidamiento > 4 niveles, too many branches | Extraer funciones, reducir anidamiento, early returns |
-| CR-02 | Código muerto | Funciones/variables/imports no usados | Eliminar |
-| CR-03 | Redundancia | Lógica duplicada 2+ veces | Extraer a función compartida |
-| CR-04 | Nomenclatura | Nombres crípticos, single-letter, snake_case/camelCase inconsistente | Renombrar con intención explícita |
-| CR-05 | Acoplamiento | Módulos con +3 responsabilidades | Aplicar Single Responsibility, separar en módulos |
+### Pilar 6 — Seguridad por Contexto (no marketing)
 
-```bash
-# Detectar funciones largas (Python)
-rg -n '^\s+def \w+' --type py src/  # listar funciones → revisar manualmente
-# Detectar imports huérfanos
-rg -n '^import \w+|^from \w+ import' --type py src/
-# Código muerto en Python (funciones definidas pero no referenciadas)
-rg -n '^def \w+|^class \w+' --type py src/ | grep -v 'test_\|__init__\|def setUp\|def tearDown\|def main'
-```
+No aplicar checklist genérico de ciberseguridad. Preguntar:
 
-### Resiliencia
+1. **¿Este proyecto opera en red aislada o con internet?**
+   - Red local aislada (minería, plantas): priorizar **rate limiting + validación inputs + segmentación Docker**
+   - Con internet: priorizar **HTTPS + auth + RBAC + WAF**
+2. **¿Quién puede dañar el hardware con un comando erróneo?**
+   - Si hay comandos RF (frecuencia, ganancia, scan): **rate limiting obligatorio**
+   - Si hay firmware flasheable: **control de acceso al serial/JTAG**
+3. **¿Los datos son sensibles?** (ubicaciones, frecuencias, potencias)
+   - Si: logging mínimo, no exponer en dashboards públicos
+   - No: priorizar observabilidad sobre secrecía
 
-| ID | Check | Qué buscar | Acción |
-|----|-------|-----------|--------|
-| CR-06 | Idempotencia | Ejecutar N veces produce resultados distintos (archivos duplicados, datos repetidos) | Rediseñar para que sea idempotente |
-| CR-07 | Manejo de excepciones | `except: pass`, cleanup pendiente en errores | Log + cleanup + re-raise o salida limpia |
-| CR-08 | Timeouts | Operaciones de red/IO/subprocess sin timeout | Agregar timeout explícito |
-| CR-09 | Estado inconsistente | Fallo parcial deja archivos temporales, containers, volúmenes | Usar `try/finally`, context managers, `--rm` |
+Regla: **Un control de seguridad que no está justificado por el contexto es
+ruido.** Preferir 3 controles bien aplicados a 10 checklist items genéricos.
 
-```bash
-# Except pasivo
-rg -n 'except\s*(\w+\s*)?:\s*pass' --type py src/
-# Subprocess sin timeout
-rg -n 'subprocess\.(run|Popen)\([^)]*(?!timeout)' --type py src/
-# Open sin context manager (Python antiguo)
-rg -n "open\([^)]*\)(?!\s*as\b)" --type py src/
-```
+Ver estándar completo en `docs/security-standards.md` del proyecto.
 
-### Seguridad (complementaria a Fase -1)
+### Pilar 7 — Documentación con Propósito
 
-| ID | Check | Qué buscar | Acción |
-|----|-------|-----------|--------|
-| CR-10 | Credenciales hardcodeadas | Passwords, tokens, API keys en el código | Mover a variables de entorno / secrets |
-| CR-11 | Validación de inputs | Parámetros de usuario sin sanitizar, SQL injection, path traversal | Validar tipo/rango/contenido con allowlist |
-| CR-12 | Mínimo privilegio | Permisos 777, containers como root, volúmenes en modo `rw` innecesario | 755/644, USER directive, `:ro` si no escribe |
+No documentar por documentar. Cada documento debe responder una pregunta
+real que un desarrollador u operador tendría:
 
-```bash
-# Posibles credenciales
-rg -n '(password|passwd|secret|token|api_key)\s*[:=]\s*["'"'"'][^"'"'"']+["'"'"']' --type py --type sh --ignore-case src/
-# Permisos peligrosos
-rg -n 'chmod.*777|chmod.*666' --type py --type sh src/
-```
+| Documento | Responde |
+|-----------|----------|
+| `docs/fsk-data-pipeline.md` | ¿Cómo fluye un dato desde el SX1278 hasta el frontend? |
+| `docs/gateway-query-pipeline.md` | ¿Cómo configuro la gateway LoRa? |
+| `docs/testing-guidelines.md` | ¿Qué y cómo testear? |
+| ADR en `docs/adr/` | ¿Por qué se tomó esta decisión técnica? |
 
-### Observabilidad
+Regla: **Un documento sin una pregunta que responder es deuda técnica.**
+No crear `README.md` genéricos. Si el código es auto-explicativo (Code UX),
+no necesita documentación aparte.
 
-| ID | Check | Qué buscar | Acción |
-|----|-------|-----------|--------|
-| CR-13 | Logs con nivel apropiado | `print()` en producción, errores sin stack trace | Usar `logging` con niveles (info/debug/error) |
-| CR-14 | Exit codes estandarizados | Salidas sin código o códigos ad-hoc | 0=ok, 1=error general, 2=error de uso, 127=comando no encontrado |
-| CR-15 | Mensajes accionables | "Error" sin contexto | Incluir qué pasó, por qué, cómo solucionarlo |
-| CR-16 | CI/CD readiness | Script requiere stdin interactivo, no tiene dry-run, produce output binario | Flags `--yes`/`--no-input`, modo dry-run, salida limpia para pipelines |
+### Pilar 8 — AI Donde Tiene Sentido (no por moda)
 
-```bash
-# Print en producción (no CLI)
-rg -n '\bprint\s*\(' --type py src/ --glob '!test_*.py' --glob '!cli*.py'
-# Salida sin exit code
-rg -n 'sys\.exit\(' --type py src/
-```
+No es "agregar AI al producto". Es usar AI en el proceso de desarrollo donde
+aporte valor real:
 
-### Criterio de bloqueo
+| Uso | Valor real | Dónde aplica |
+|-----|-----------|--------------|
+| **Property-Based Testing** (Hypothesis) | Encuentra bugs que tests manuales no ven | Parsers de tramas binarias (VLAD, FSK, TG) |
+| **Fuzzing de entradas seriales** | Detecta crashes con datos corruptos | `fsk_decoder.py`, `vlad_decoder.py` |
+| **Análisis de logs con LLM** | Debug de fallos intermitentes en producción | Logs estructurados de monitor-serial |
+| **Generación de ADR** | Documentar decisiones arquitectónicas rápido | `docs/adr/` cuando hay cambio de diseño |
 
-| Hallazgos | Acción |
-|-----------|--------|
-| CR-XX con severidad ≥ ALTO y count ≥ 3 | **Bloquear** — aplicar fixes antes de continuar a Fase -1 |
-| CR-XX con severidad ≥ ALTO y count < 3 | Registrar + continuar |
-| Solo BAJOS/MEDIOS | Registrar + continuar |
+Lo que NO hacer:
+- "Sistema con AI" si solo es un if-else
+- Chatbot en el dashboard sin caso de uso real
+- Modelos ML para predecir fallos sin datos históricos suficientes
+
+### Code UX Checklist (5to Pilar)
+
+| # | Check | Qué buscar | Acción |
+|---|-------|-----------|--------|
+| UX-01 | 3-Second Scan | El archivo no tiene header de 3 líneas (qué, cómo, no hace) | Agregar header |
+| UX-02 | API por flujo | Métodos mezclados sin orden de uso (constructor entre getters) | Reordenar por flujo natural |
+| UX-03 | Nombres-verb | `apply_config()`, `handle_data()`, `get_value()` en vez de `start()`, `on_data()`, `count()` | Renombrar a intención explícita |
+| UX-04 | `[[nodiscard]]` | Funciones que retornan valor sin `[[nodiscard]]` | Agregar `[[nodiscard]]` |
+| UX-05 | Lógica inline en headers | Headers con implementaciones >5 líneas | Mover a .cpp |
+| UX-06 | Archivos >500 líneas | `wc -l` excede 500 | Separar en módulos |
+| UX-07 | `#if 0` / código comentado | Bloques muertos que confunden | Eliminar |
+| UX-08 | Parámetros >4 | Funciones con +5 parámetros | Agrupar en struct |
+| UX-09 | C++20: `std::span`/`optional`/`array` | APIs legacy con `T* + size` o `bool + T&` | Migrar a C++20 types |
+| UX-10 | `static_assert` ausente | Módulos sin verificación compile-time | Agregar mínimo 1 |
 
 ---
 
 ## Fase -1 — Auditoría de Seguridad Estática
 
-**Obligatoria. Se ejecuta después del Code Review Avanzado y antes del ciclo TDD/BDD.** No requiere agentes externos. Critical/High bloquean el avance a Fase 0.
+**Obligatoria.** Ejecutar después del Code Review Avanzado y antes del ciclo TDD/BDD. Usar los detectores por lenguaje del proyecto:
 
-### BOM Detection (cross-language, ejecutar primero)
+| Lenguaje | Herramientas |
+|----------|-------------|
+| PHP | `rg --type php -n '\beval\s*\('`, `'unserialize\('`, `'\$_(GET\|POST\|REQUEST)\['` |
+| JS/TS | `rg --type js -n '\.innerHTML\s*[+]?='`, `'\beval\s*\('`, `'document.write\('` |
+| Python | `rg --type py -n 'subprocess\.'`, `'except\s+Exception\s*:\s*pass'`, `'\beval\s*\('` |
+| Shell | `rg 'rm \$[A-Z]'`, `'curl.*\|.*bash'`, `'chmod 777'` |
 
-```bash
-grep -rlP '^\xEF\xBB\xBF' src/ --include='*.php' --include='*.py' --include='*.sh' --include='*.js'
-```
-BOM antes de `<?php`, `#!` o `declare(strict_types=1)` rompe el archivo. Fix: `sed -i '1s/^\xEF\xBB\xBF//' <archivo>`
-
-### PHP
-
-| ID | Patrón | Severidad | Fix |
-|----|--------|-----------|-----|
-| PHP-01 | `$_GET`/`$_POST`/`$_REQUEST` sin framework accessor | Medium | `$this->getRequest()->getPost/getQuery()` |
-| PHP-02 | `$_SERVER['HTTP_*']` sin sanitizar en output/mail/SQL | Medium | `preg_replace('/[^a-zA-Z0-9.\-]/', '', ...)` |
-| PHP-03 | `die()`/`exit()` en controllers o librerías | Medium | `echo json_encode(...); return;` |
-| PHP-04 | `@` error suppression en filesystem ops | Low | `file_exists()` + operación explícita |
-| PHP-05 | `eval(` en código activo | Critical | Eliminar; reescribir con lógica explícita |
-| PHP-06 | `extract($_GET/POST/REQUEST)` | Critical | Acceder a keys explícitamente |
-| PHP-07 | `unserialize(` con input de usuario | Critical | Usar `json_decode` |
-| PHP-08 | `preg_replace` con modificador `/e` | Critical | Reemplazar con `preg_replace_callback` |
-| PHP-09 | `is_numeric()` para validar IDs | Low | `ctype_digit($v) && $v !== ''` |
-| PHP-10 | `json_decode()` sin null-check | Low | `if (!is_array($d)) { ... }` |
-| PHP-11 | Acceso a `$arr['key']` sin `isset()` o `??` | Low | `$arr['key'] ?? default` |
-| PHP-12 | `echo $var` en PHTML sin escape | High | `$this->escape($var)` |
-| PHP-13 | `header("Location: ...")` sin `return` después | Medium | Agregar `return;` |
-| PHP-14 | `file_get_contents($url)` con input de usuario | High | Validar URL con allowlist |
-| PHP-15 | `chmod` con `0777`/`0666` | Medium | `0755` dirs / `0644` archivos |
-| PHP-16 | `declare(strict_types=1)` ausente | Low | Agregar al inicio del archivo |
-| PHP-17 | UTF-8 BOM al inicio | Critical | `sed -i '1s/^\xEF\xBB\xBF//'` |
-| PHP-18 | `declare(strict_types=1)` no es la primera instrucción | High | Mover inmediatamente después de `<?php` |
-| PHP-19 | `${var}` en strings interpolados (eliminado PHP 8.2) | High | Reemplazar con `{$var}` |
-| PHP-20 | Trailing comma en declaraciones (PHP < 8.0) | Medium | Eliminar si target es PHP 7.4 |
-| PHP-21 | `sleep()`/`usleep()` en el request path | Medium | Mover a workers/colas |
-| PHP-22 | Credenciales hardcodeadas | Critical | Mover a variables de entorno |
-
-```bash
-rg --type php -n '\$_(GET|POST|REQUEST)\[' src/
-rg --type php -n '\bdie\b|\bexit\b' src/ --glob '!*.cli.php'
-rg --type php -n '\beval\s*\(' src/
-rg --type php -n 'is_numeric\(' src/
-```
-
-### JavaScript / TypeScript
-
-| ID | Patrón | Severidad | Fix |
-|----|--------|-----------|-----|
-| JS-01 | `.innerHTML =` sin escape | High | `escHtml(val)` o `textContent` |
-| JS-02 | `eval(` en código activo | Critical | Eliminar |
-| JS-03 | `document.write(` | High | Manipulación DOM |
-| JS-04 | `setTimeout(string, ...)`/`setInterval(string, ...)` | High | Pasar función, nunca string |
-| JS-05 | `var` en loops `for (var i = ...)` | Low | Reemplazar con `let` |
-| JS-06 | `console.log(` en producción | Low | Eliminar o `console.error` en catch |
-| JS-07 | `alert(`/`confirm(`/`prompt(` en flujos no destructivos | Low | Notificaciones inline en DOM |
-| JS-08 | Variables globales implícitas | Medium | Declarar con `let`/`const` |
-| JS-09 | `window.location = userInput` sin sanitizar | High | Allowlist de rutas internas |
-| JS-10 | Dead code comentado con lógica sensible | Low | Eliminar |
-
-```bash
-rg --type js -n '\.innerHTML\s*[+]?=' src/ --glob '!*.min.js'
-rg --type js -n '\beval\s*\(' src/ --glob '!*.min.js'
-rg --type js -n 'for\s*\(\s*var\s+[ijk]\b' src/ --glob '!*.min.js'
-```
-
-### Python
-
-| ID | Patrón | Severidad | Fix |
-|----|--------|-----------|-----|
-| PY-01 | `subprocess` con `shell=True` e input de usuario | Critical | Lista de argumentos `['cmd', arg]` |
-| PY-02 | `os.system(` con variable | High | `subprocess.run([...])` |
-| PY-03 | `eval(`/`exec(` con input de usuario | Critical | Eliminar |
-| PY-04 | `pickle.loads(` con datos externos | Critical | `json.loads` |
-| PY-05 | `except Exception: pass` | Medium | `except Exception as e: logging.warning(...)` |
-| PY-06 | `print(` en servidor (no CLI) | Low | `logging.info/debug` |
-| PY-07 | CORS `allow_credentials=True` + `allow_origins=["*"]` | High | `allow_credentials=False` con wildcard |
-| PY-08 | IP hardcodeada en lógica de negocio | Medium | Config/env var |
-| PY-09 | `open(filename)` con input de usuario sin validar | High | Regex allowlist antes de abrir |
-| PY-10 | Credenciales hardcodeadas | Critical | Variables de entorno |
-
-```bash
-rg --type py -n 'subprocess\.' src/
-rg --type py -n 'except\s+Exception\s*:\s*pass' src/
-rg --type py -n '\beval\s*\(|\bexec\s*\(' src/
-rg --type py -n '\bprint\s*\(' src/ --glob '!test_*.py'
-```
-
-### Shell / Bash
-
-| ID | Patrón | Severidad | Fix |
-|----|--------|-----------|-----|
-| SH-01 | Variables sin comillas: `rm $FILE` | Medium | `rm "$FILE"` |
-| SH-02 | `curl ... \| bash` | High | Descargar, verificar hash, ejecutar |
-| SH-03 | `chmod 777` | Medium | `755` o `644` según el caso |
-| SH-04 | Credenciales en variables de entorno sin protección | Medium | Archivos de secretos |
-
-### Criterio de bloqueo
-
-| Severidad | Acción |
-|-----------|--------|
-| Critical / High | Bloquear — fix antes de continuar a Fase 0 |
-| Medium | Fix + registrar + continuar |
-| Low | Registrar como observación + continuar |
+Critical/High bloquean el avance. Medium → fix + continuar. Low → registrar.
 
 ---
 
@@ -280,33 +187,14 @@ rg --type py -n '\bprint\s*\(' src/ --glob '!test_*.py'
 
 ## Fase 2 — Prompts por Agente
 
-### ATDD Expert
-> "Revisa `<path>`. Verifica que los criterios de aceptación sean medibles y automatizables. Si hay Docker/CI, valida que el pipeline refleje los ACs. Detecta requisitos contradictorios. Entrega: AC-01..N + DoD + GREEN/RED LIGHT."
-
-Saltar si: refactor interno sin cambios en contratos externos.
-
-### BDD Expert
-> "Revisa `<path>`. Escribe escenarios Given-When-Then: happy path + alternativas + errores. Traduce a Catch2 SCENARIO / pytest-bdd / behave según el stack. Entrega: Feature + Escenarios + Código de test + GREEN/RED LIGHT."
-
-Saltar si: el cambio no afecta flujos de usuario ni comportamiento observable.
-
-### TDD Expert
-> "Audita tests y código de producción en `<path>`. Ciclo Red-Green-Refactor: (1) ¿Tests rojos sin implementación? (2) ¿Código sin tests? (3) ¿Tests FIRST? (4) ¿Nombres describen comportamiento? Entrega: Diagnóstico + Tests sugeridos + Resultado de suite + GREEN/RED LIGHT."
-
-**Nunca saltar.**
-
-### PBT Expert
-> "Analiza `<path>`. Escribe tests de propiedad (Hypothesis / RapidCheck / fast-check). Busca invariantes: roundtrip, idempotencia, no-crash, postcondiciones. Para serial/puertos: inputs aleatorios con casos borde. Si hay fallo, shrink al caso mínimo. Entrega: Propiedades + Tests + Fallos + Tests de regresión + GREEN/RED LIGHT."
-
-Para embedded/serial: generar bytes arbitrarios para parsers, combinaciones de baud rate/timeouts/buffer, secuencias UART con ruido.
-
-### DDT Expert
-> "Diseña dataset para `<path>`: valores normales, límites, nulos, vacíos, fuera de rango, combinaciones críticas. Implementa test parametrizado (pytest.mark.parametrize / Catch2 data-driven). Entrega: Schema + Dataset + Test parametrizado + Análisis de cobertura + Casos faltantes + GREEN/RED LIGHT."
-
-### HWIT Auditor *(condicional)*
-> "Audita `<path>` con foco en bugs de Capa 3 (hardware real). CAT-1 (sentinels SCPI), CAT-2 (timing/sweep), CAT-3 (race conditions recursos exclusivos), CAT-4 (retry/verificación post-comando), CAT-5 (teardown/estado instrumento), CAT-6 (deployment container). Severidad: 🔴 CRÍTICO / 🟠 ALTO / 🟡 MEDIO / 🟢 BAJO. Entrega: tabla de hallazgos + GREEN/RED LIGHT."
-
-Saltar si: el código no interactúa con instrumentos físicos.
+| Agente | Prompt | Skip si |
+|--------|--------|---------|
+| ATDD | "Verifica criterios de aceptación medibles y automatizables, pipeline refleja ACs." | Refactor interno sin cambios de contratos |
+| BDD | "Escribe Given-When-Then: happy path + alternativas + errores. Traduce a Catch2/pytest-bdd/behave." | Sin afectar flujos de usuario |
+| TDD | "Red-Green-Refactor: ¿tests rojos sin impl? ¿código sin tests? ¿FIRST?" | **Nunca** |
+| PBT | "Tests de propiedad (Hypothesis/RapidCheck/fast-check): roundtrip, idempotencia, no-crash." | — |
+| DDT | "Dataset: normales, límites, nulos, combinaciones críticas. Test parametrizado." | — |
+| HWIT | "CAT-1..6 en hardware real (SCPI, timing, race, retry, teardown, container)." | Sin instrumentos físicos |
 
 ---
 
@@ -323,65 +211,7 @@ Saltar si: el código no interactúa con instrumentos físicos.
 
 ## Fase 4 — Reporte Consolidado
 
-```markdown
-# Reporte de Calidad — UQOMM QA Master
-
-**Proyecto:** <nombre>  **Ruta:** <path>  **Tarea:** <tipo>  **Fecha:** <YYYY-MM-DD>  **Rondas:** <N>
-
-| # | Agente | Estado | Hallazgos | Fixes | Observaciones |
-|-- |--------|--------|-----------|-------|---------------|
-| -2 | Code Review Avanzado | ✅ | 0 | 0 | — |
-| -1 | Security Audit | ✅ | 0 | 0 | — |
-| 1 | ATDD Expert | ✅ | 0 | 0 | — |
-| 2 | BDD Expert | ✅ | 0 | 0 | — |
-| 3 | TDD Expert | ✅ | 0 | 0 | — |
-| 4 | PBT Expert | ✅ | 0 | 0 | — |
-| 5 | DDT Expert | ✅ | 0 | 0 | — |
-| 6 | HWIT Auditor | ✅* | 0 | 0 | * si aplica |
-
-## Veredicto Final: APPROVED ✅
-
-## Observaciones acumuladas
-- (lista de observaciones no bloqueantes)
-
-## Comandos de verificación
-```bash
-# Python (pytest + Hypothesis)
-cd src/drs_control && pytest -v --tb=short
-cd src/drs_control && pytest --hypothesis-show-statistics
-
-# C++ (Catch2)
-cmake --build <build_dir> -j4 && ctest --output-on-failure
-
-# UI (Playwright)
-cd <repo> && $env:DRS_ADMIN_PASSWORD="Admin.123"; npx playwright test --project=chromium-light-fhd
-```
-
-## Post-Install Verification (DRS)
-
-Ejecutar contra el servidor de pruebas (`192.168.60.141`) después de cada deploy:
-
-```bash
-# 1. Suite completa de unit tests
-cd src/drs_control && pytest -v --tb=line
-# Esperado: 113+ passed, 0 failures (2 pre-existentes conocidos ignorables)
-
-# 2. Suite completa de UI
-cd <repo> && $env:DRS_ADMIN_PASSWORD="Admin.123"; npx playwright test --project=chromium-light-fhd
-# Esperado: 79+ passed, 0 failures
-
-# 3. Verificación específica de frecuencias DMU (board reachable)
-ssh root@192.168.60.141 'docker exec drs-daemon python3 /usr/lib/nagios/plugins/drs_control/drs_control.py 192.168.11.22 dmu_state'
-# Esperado: "frequencies": [819.0, ...]  — valores en MHz, NO divididos por 10000
-
-# 4. Verificación de optical ports (read-before-write preserva board ID)
-# Ejecutar Apply en DMU Config → verificar que board ID no se resetea a 0
-# Monitorear en Icinga Director o via msfb.cgi: cgiNumber=9
-
-# 5. PHP lint (cada archivo modificado antes de deploy)
-ssh root@192.168.60.141 'docker exec drs-icingaweb2 php -l /path/to/file.php'
-```
-```
+Generar tabla markdown con: `# | Agente | Estado | Hallazgos | Fixes | Observaciones`, veredicto APPROVED/REJECTED, y comandos de verificación del stack detectado en Fase 0.
 
 ---
 
@@ -400,6 +230,22 @@ SDKs de fabricantes compilados contra librerías deprecadas (ej. `libudev` antig
 
 **4. Hostname descentralizado (Offline-First)**
 Formato: `<client>-<role>-<location>-<mac-last4>` (ej. `uqomm-testbench-lab-657a`). Prohibido usar IDs secuenciales (`testbench-1`, `testbench-2`) — generan colisiones y no funcionan offline.
+
+---
+
+## Documentación mínima por proyecto
+
+Cada proyecto debe tener al menos:
+- `docs/` con:
+  - Pipeline principal documentado (quién produce, quién consume, formato)
+  - Security standards contextuales (por qué sí / por qué no cada control)
+  - Testing guidelines (qué cubrir, qué omitir)
+- ADR para decisiones arquitectónicas no triviales (>30 min de discusión)
+
+Lo que NO:
+- README.md repetitivo ("Este proyecto hace X")
+- Documentación generada que nadie lee
+- arc42 completo para un script de 200 líneas
 
 ---
 

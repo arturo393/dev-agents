@@ -1,46 +1,54 @@
 # dev-agents
 
-Conocimiento general reutilizable para asistentes de IA (OpenCode, Copilot, Cursor, Claude).
+Reusable general knowledge for AI assistants (opencode, Copilot, Cursor, Claude).
 
-## Propósito
+## Purpose
 
-Este repo contiene **fundamentos generales** de software engineering, testing, firmware, hardware, y brand guidelines. Cada proyecto tiene su propio `agents.md` con contexto específico.
+This repo contains **general foundations** for software engineering, firmware, and brand guidelines. Optimized for opencode — each project references this repo for shared knowledge.
 
-## Estructura
+## Structure
 
 ```
 dev-agents/
+├── opencode.json                          # opencode config
+├── .opencode/
+│   ├── instructions/
+│   │   ├── software-foundation.md         # Code Review, XDD, Fault Tolerance, Hardware Resilience
+│   │   └── firmware-foundation.md         # MISRA-C, C++20, Testing Tiers, Layered Architecture
+│   └── skills/                            # (reserved for future skills)
 ├── shared/
-│   ├── software-foundation.md   # Code Review, Security, XDD, Fault Tolerance
-│   ├── firmware-foundation.md   # MISRA-C, C++20 embedded, Testing Tiers
-│   ├── hardware-foundation.md   # Simulation Fallback, Tests tolerantes
-│   ├── brands/
-│   │   ├── uqomm.md             # Brand tokens UQOMM
-│   │   └── safetymind.md        # Brand tokens SafetyMind
-│   ├── standards/
-│   │   ├── go.instructions.md   # Go idiomatic
-│   │   ├── ansible.instructions.md
-│   │   ├── sanitizer-standards.md
-│   │   └── cleanup-guidelines.md
-│   ├── workflows/
-│   │   ├── driven-development.md
-│   │   └── testing-cycle.md
-│   └── skills/
-│       ├── SKILL.md             # Decision making framework
-│       └── git-jira-sync/
-│           └── SKILL.md
+│   └── brands/
+│       ├── uqomm.md                       # Brand tokens UQOMM
+│       └── safetymind.md                  # Brand tokens SafetyMind
 └── README.md
 ```
 
-## Uso
+## Usage
 
-1. **En tu proyecto**: Crea un `agents.md` con el contexto específico de tu proyecto
-2. **En OpenCode**: Referencia los foundations de `shared/` para fundamentos generales
-3. **En otros proyectos**: Los `shared/` files son reutilizables sin modificación
+### In opencode
 
-## Convenciones
+1. Clone this repo or add as submodule
+2. Reference from your project's `opencode.json`:
+   ```json
+   {
+     "references": {
+       "dev-agents": {
+         "path": "/path/to/dev-agents",
+         "description": "General SE, firmware, and brand foundations"
+       }
+     }
+   }
+   ```
+3. Or copy the files you need to your project
 
-- Este repo solo contiene conocimiento **general** y **reutilizable**
-- El contexto específico de cada proyecto va en su propio `agents.md`
-- Los brand guidelines van en `shared/brands/<marca>.md`
-- Máximo ~150 líneas por archivo. Sin teoría genérica — solo lo aplicable
+### In other tools
+
+Copy the files from `.opencode/instructions/` to your project's context.
+
+## Conventions
+
+- This repo contains only **general** and **reusable** knowledge
+- Project-specific context goes in each project's own `agents.md`
+- Brand guidelines go in `shared/brands/<brand>.md`
+- Max ~150 lines per file. No generic theory — only applicable patterns
+- All content in English

@@ -120,6 +120,34 @@ Add `self_test_run()` called once at boot (after peripheral init, before super-l
 
 ---
 
+## Layered Architecture
+
+### Mandatory Separation
+
+```
+┌─────────────────────────────────┐
+│  Application Layer              │  State machines, business logic
+│  (no direct HW access)         │  Never call HAL_* directly
+├─────────────────────────────────┤
+│  Service Layer                  │  Communication, logging, watchdog
+│  (optional intermediaries)      │  Reusable across projects
+├─────────────────────────────────┤
+│  Driver Layer                   │  Init, read, write, control
+│  (one per peripheral)           │  Exposes clean interface
+├─────────────────────────────────┤
+│  HAL Layer                      │  Vendor-provided (STM32 HAL)
+│  (never modify)                 │  Access to registers
+└─────────────────────────────────┘
+```
+
+### Rules
+1. Application NEVER calls HAL_* directly — always through Driver
+2. Drivers NEVER contain business logic — only hardware control
+3. Services are stateless and testable on host
+4. Dependencies point DOWN only (Application → Driver → HAL)
+
+---
+
 ## Driver Structure
 
 ### Header Interface Pattern

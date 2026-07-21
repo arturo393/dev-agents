@@ -260,11 +260,11 @@ class MyApp {
     Radio* radio_;
 public:
     explicit MyApp(Radio* r) : radio_(r) {}
-    void run() { radio_->set_fsk_frequency(174925000); }
+    void run() { radio_->set_fsk_frequency(144000000); }
 };
 ```
 
-If Lora doesn't satisfy the concept, it won't compile. Zero runtime overhead.
+If the device doesn't satisfy the concept, it won't compile. Zero runtime overhead.
 
 ---
 

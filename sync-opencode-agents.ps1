@@ -1,15 +1,19 @@
 param(
     [string]$SourceDir = (Split-Path -Parent $PSCommandPath),
     [string]$OutDir = "$env:USERPROFILE\.config\opencode\agents",
-    [string]$FoundationFile = "$SourceDir\shared\foundation.md"
+    [string]$SoftwareFoundation = "$SourceDir\shared\software-foundation.md",
+    [string]$HardwareFoundation = "$SourceDir\shared\hardware-foundation.md",
+    [string]$FirmwareFoundation = "$SourceDir\shared\firmware-foundation.md"
 )
 
 if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir -Force | Out-Null }
 
-# Load shared foundation
+# Load shared foundations
 $foundation = ""
-if (Test-Path $FoundationFile) {
-    $foundation = "`n" + (Get-Content -LiteralPath $FoundationFile -Raw) + "`n"
+foreach ($fFile in @($SoftwareFoundation, $HardwareFoundation, $FirmwareFoundation)) {
+    if (Test-Path $fFile) {
+        $foundation += "`n" + (Get-Content -LiteralPath $fFile -Raw) + "`n"
+    }
 }
 
 $files = Get-ChildItem -Path $SourceDir -Recurse -Filter "*.agent.md"

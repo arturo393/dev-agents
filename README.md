@@ -1,31 +1,46 @@
 # dev-agents
 
-Repositorio central de agentes e instrucciones para asistentes de IA (Copilot, Cursor, Claude).
+Conocimiento general reutilizable para asistentes de IA (OpenCode, Copilot, Cursor, Claude).
+
+## Propósito
+
+Este repo contiene **fundamentos generales** de software engineering, testing, firmware, hardware, y brand guidelines. Cada proyecto tiene su propio `agents.md` con contexto específico.
 
 ## Estructura
 
 ```
 dev-agents/
-├── uqomm/          # Cliente UQOMM — agentes hardware/firmware/QA específicos
-├── safetymind/     # Cliente SafetyMind — infra, Jira, DAS
-├── personal/       # Proyectos personales — montecarlo-bot, planner, jira
-└── shared/         # Reutilizable cross-proyecto
-    ├── experts/    # Agentes especializados: xdd/, cpp, react, python
-    ├── skills/     # Skills ejecutables: git-jira-sync, repo_sentinel, ui-audit
-    ├── standards/  # Políticas: go, ansible, react, testing, sanitizer
-    └── workflows/  # Procedimientos: cleanup, sanitizer, testing-cycle
+├── shared/
+│   ├── software-foundation.md   # Code Review, Security, XDD, Fault Tolerance
+│   ├── firmware-foundation.md   # MISRA-C, C++20 embedded, Testing Tiers
+│   ├── hardware-foundation.md   # Simulation Fallback, Tests tolerantes
+│   ├── brands/
+│   │   ├── uqomm.md             # Brand tokens UQOMM
+│   │   └── safetymind.md        # Brand tokens SafetyMind
+│   ├── standards/
+│   │   ├── go.instructions.md   # Go idiomatic
+│   │   ├── ansible.instructions.md
+│   │   ├── sanitizer-standards.md
+│   │   └── cleanup-guidelines.md
+│   ├── workflows/
+│   │   ├── driven-development.md
+│   │   └── testing-cycle.md
+│   └── skills/
+│       ├── SKILL.md             # Decision making framework
+│       └── git-jira-sync/
+│           └── SKILL.md
+└── README.md
 ```
+
+## Uso
+
+1. **En tu proyecto**: Crea un `agents.md` con el contexto específico de tu proyecto
+2. **En OpenCode**: Referencia los foundations de `shared/` para fundamentos generales
+3. **En otros proyectos**: Los `shared/` files son reutilizables sin modificación
 
 ## Convenciones
 
-- Cada proyecto tiene un `context.md` con stack, rutas, comandos de build/test.
-- Agentes UQOMM-specific viven en `uqomm/agents/`. Los reutilizables en `shared/experts/`.
-- Un agente es útil si contiene rutas, decisiones o convenciones que el LLM no puede adivinar.
-- Scripts con credenciales usan variables de entorno (`$SSH_PASSWORD`), nunca valores hardcodeados.
-
-## Agregar un agente nuevo
-
-1. ¿Es específico de un proyecto? → `<proyecto>/agents/`
-2. ¿Es reutilizable entre proyectos? → `shared/experts/`
-3. ¿Es un script ejecutable? → `shared/skills/<nombre>/scripts/`
-4. Máximo ~150 líneas. Sin teoría genérica — solo lo que el LLM no sabe de tu proyecto.
+- Este repo solo contiene conocimiento **general** y **reutilizable**
+- El contexto específico de cada proyecto va en su propio `agents.md`
+- Los brand guidelines van en `shared/brands/<marca>.md`
+- Máximo ~150 líneas por archivo. Sin teoría genérica — solo lo aplicable

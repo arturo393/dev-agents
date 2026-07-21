@@ -45,13 +45,34 @@ Critical/High block progress. Medium → fix + continue. Low → log.
 
 ## Testing Methodology (XDD)
 
-| Context | Method |
-|---------|--------|
-| Define what to build with business | **ATDD** — Measurable acceptance criteria |
-| Document observable behavior | **BDD** — Given-When-Then |
-| Design correct function by construction | **TDD** — Red-Green-Refactor |
-| Find edge cases | **PBT** — Properties + fuzzing |
-| Multiple devices/configurations | **DDT** — Data-driven tests |
+> Pragmatism over dogma. Each methodology is a tool, not a religion.
+
+### Methodology Catalog
+
+| # | Methodology | When | Flow | Output |
+|---|-------------|------|------|--------|
+| 1 | **CDD** (Component-Driven) | New UI components | Story/mock → Component → Visual test | Atomic component with variants |
+| 2 | **TDD** (Test-Driven) | Pure logic, hooks, utilities | Red → Green → Refactor | Unit test + minimal implementation |
+| 3 | **BDD** (Behavior-Driven) | User flows, pages, integrations | Story → Scenario → Integration test → Code | Business-readable integration test |
+| 4 | **DDD** (Domain-Driven) | Complex business logic, microservices | Bounded context → Entities/aggregates → Implement | Code reflecting ubiquitous language |
+| 5 | **ATDD** (Acceptance Test-Driven) | Client/PM acceptance criteria | Criterion → Acceptance test → Feature → Validation | Feature validated against expectations |
+| 6 | **SDD** (Schema-Driven) | API contracts, shared types | Schema → Types → Runtime validation | Zod/TypeScript defining the contract |
+| 7 | **STDD** (Security-Test-Driven) | Sensitive endpoints, auth | Identify vector → Security test → Mitigate → Verify | Tests for injection, XSS, exposure |
+| 8 | **PBT** (Property-Based) | Edge cases, fuzzing | Properties + random inputs → Failures | Discovered edge cases |
+| 9 | **DDT** (Data-Driven) | Multiple devices/configurations | Test matrix → Execute per config | Coverage across variants |
+
+### Quick Selection Matrix
+
+| Scenario | Methodology | Priority |
+|----------|-------------|----------|
+| New UI component | CDD + TDD (logic) | High |
+| New hook or utility | TDD | High |
+| Feature with defined criteria | BDD / ATDD | Medium |
+| New API or integration | SDD + TDD | High |
+| Refactor existing logic | TDD (before) | Medium |
+| Critical bug | TDD (reproduce bug) | High |
+| Complex domain module | DDD + TDD | High |
+| Feature with sensitive data | STDD | Risk-based |
 
 **Golden rule:** No test, no production change. Every fix includes its test.
 

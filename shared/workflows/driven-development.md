@@ -1,92 +1,88 @@
 ---
 name: Driven Development (XDD)
-description: SafetyMind XDD Standards - Multi-Paradigm Driven Development (V1.0)
+description: Multi-Paradigm Driven Development Methodologies
 ---
 
-# 🔄 SafetyMind XDD - Multi-Paradigm Driven Development
+# XDD - Multi-Paradigm Driven Development
 
-Este agente selecciona y aplica la metodología Driven Development adecuada según el contexto del cambio, maximizando flexibilidad sin sacrificar calidad.
+This agent selects and applies the appropriate Driven Development methodology based on change context, maximizing flexibility without sacrificing quality.
 
-## 🎯 Principio Rector
+## Guiding Principle
 
-> Pragmatismo sobre dogma. Cada metodología es una herramienta, no una religión.
+> Pragmatism over dogma. Each methodology is a tool, not a religion.
 
-## 📋 Catálogo de Metodologías XDD
+## XDD Methodology Catalog
 
 ### 1. CDD (Component-Driven Development)
-- **Cuándo**: Componentes de UI nuevos en React/Next.js
-- **Flujo**: Story o mock → Componente → Test visual
-- **Output**: Componente atómico con variantes y estados (loading, empty, error, success)
-- **Herramientas**: Storybook, Vitest + Testing Library
+- **When**: New UI components in React/Next.js
+- **Flow**: Story or mock → Component → Visual test
+- **Output**: Atomic component with variants and states (loading, empty, error, success)
+- **Tools**: Storybook, Vitest + Testing Library
 
 ### 2. TDD (Test-Driven Development)
-- **Cuándo**: Lógica pura, hooks, utilidades, conversiones de datos
-- **Flujo**: Red (test falla) → Green (test pasa) → Refactor
-- **Output**: Test unitario + implementación mínima
-- **Herramientas**: Vitest, Jest
+- **When**: Pure logic, hooks, utilities, data conversions
+- **Flow**: Red (test fails) → Green (test passes) → Refactor
+- **Output**: Unit test + minimal implementation
+- **Tools**: Vitest, Jest
 
 ### 3. BDD (Behavior-Driven Development)
-- **Cuándo**: Flujos de usuario, pages, integraciones
-- **Flujo**: User Story → Escenario → Test de integración → Código
-- **Output**: Test de integración legible por negocio
-- **Herramientas**: Vitest con describe/it descriptivo (sin Gherkin)
+- **When**: User flows, pages, integrations
+- **Flow**: User Story → Scenario → Integration test → Code
+- **Output**: Business-readable integration test
+- **Tools**: Vitest with descriptive describe/it (no Gherkin)
 
 ### 4. DDD (Domain-Driven Design)
-- **Cuándo**: Lógica de negocio compleja, microservicios, modelos de datos
-- **Flujo**: Ubicar contexto acotado → Modelar entidades/agregados → Implementar
-- **Output**: Código que refleja el lenguaje ubicuo del dominio
-- **Recursos**: `SDD_DAS.md`, tipos compartidos
+- **When**: Complex business logic, microservices, data models
+- **Flow**: Locate bounded context → Model entities/aggregates → Implement
+- **Output**: Code reflecting ubiquitous domain language
+- **Resources**: Shared types
 
 ### 5. ATDD (Acceptance Test-Driven Development)
-- **Cuándo**: Criterios de aceptación dados por el cliente/PM
-- **Flujo**: Criterio → Prueba de aceptación → Feature → Validación
-- **Output**: Feature completa validada contra expectativas
+- **When**: Acceptance criteria given by client/PM
+- **Flow**: Criterion → Acceptance test → Feature → Validation
+- **Output**: Complete feature validated against expectations
 
 ### 6. SDD (Schema-Driven Development)
-- **Cuándo**: Contratos de API, tipos compartidos, serialización
-- **Flujo**: Schema → Types → Validación runtime
-- **Output**: Zod schemas / TypeScript interfaces que definen el contrato
-- **Herramientas**: Zod, TypeScript strict, ts-reset
+- **When**: API contracts, shared types, serialization
+- **Flow**: Schema → Types → Runtime validation
+- **Output**: Zod schemas / TypeScript interfaces defining the contract
+- **Tools**: Zod, TypeScript strict, ts-reset
 
 ### 7. STDD (Security-Test Driven Development)
-- **Cuándo**: Endpoints sensibles, autenticación, datos de planta
-- **Flujo**: Identificar vector → Escribir test de seguridad → Mitigar → Verificar
-- **Output**: Tests que prueban inyección, XSS, exposure de datos
+- **When**: Sensitive endpoints, authentication, plant data
+- **Flow**: Identify vector → Write security test → Mitigate → Verify
+- **Output**: Tests for injection, XSS, data exposure
 
-## 🧠 Matriz de Selección Rápida
+## Quick Selection Matrix
 
-| Escenario | Metodología | Prioridad |
-|-----------|-------------|-----------|
-| Nuevo componente UI | CDD + TDD (lógica) | Alta |
-| Hook o utilidad nueva | TDD | Alta |
-| Feature con criterios definidos | BDD / ATDD | Media |
-| API o integración nueva | SDD + TDD | Alta |
-| Refactor de lógica existente | TDD (antes) | Media |
-| Bug crítico | TDD (reproducir bug) | Alta |
-| Módulo con lógica de dominio compleja | DDD + TDD | Alta |
-| Feature con datos sensibles | STDD | Según riesgo |
+| Scenario | Methodology | Priority |
+|----------|-------------|----------|
+| New UI component | CDD + TDD (logic) | High |
+| New hook or utility | TDD | High |
+| Feature with defined criteria | BDD / ATDD | Medium |
+| New API or integration | SDD + TDD | High |
+| Refactor existing logic | TDD (before) | Medium |
+| Critical bug | TDD (reproduce bug) | High |
+| Module with complex domain logic | DDD + TDD | High |
+| Feature with sensitive data | STDD | Risk-based |
 
-## 🚀 Flujo de Trabajo Recomendado
+## Recommended Workflow
 
-1. **Diagnóstico**: Identificar el tipo de cambio (UI, lógica, API, dominio, seguridad)
-2. **Seleccionar metodología**: Usar la matriz de selección rápida
-3. **Ejecutar ciclo**: Seguir el flujo de la metodología elegida
-4. **Auto-auditar**: Pasar el test suite antes de commit
-5. **Pueden combinarse**: Un componente nuevo puede usar CDD + TDD + SDD simultáneamente
+1. **Diagnose**: Identify change type (UI, logic, API, domain, security)
+2. **Select methodology**: Use quick selection matrix
+3. **Execute cycle**: Follow chosen methodology flow
+4. **Self-audit**: Run test suite before commit
+5. **Can combine**: New component can use CDD + TDD + SDD simultaneously
 
-## ⚠️ Anti-patrones
+## Anti-patterns
 
-- ❌ Forzar TDD en componentes UI puros (usar CDD)
-- ❌ Escribir tests BDD con Gherkin/Cucumber pesado (vitest descriptivo basta)
-- ❌ Aplicar DDD donde un simple tipo basta
-- ❌ Escribir tests triviales solo por cumplir métricas
-- ❌ STDD sin análisis de riesgo real
+- ❌ Force TDD on pure UI components (use CDD)
+- ❌ Write BDD tests with heavy Gherkin/Cucumber (descriptive vitest suffices)
+- ❌ Apply DDD where a simple type suffices
+- ❌ Write trivial tests just to meet metrics
+- ❌ STDD without real risk analysis
 
-## 🔧 Integración con el Ecosistema
+## Ecosystem Integration
 
-- `git-ops.md`: Tras pasar tests, commiteaer con mensaje semántico
-- `react-development-standard.md`: Seguir CDD con Atomic Design + Hooks-First
-- `safetymind-guardian-prime.md`: Validar WCAG AAA y Guardian Prime en componentes UI
-- `../TESTING_GUIDELINES.md`: Referencia base de testing pragmático
-- `testing-auditor.md`: Auditor post-codificación — validarás contra la metodología elegida aquí
-- `testing-cycle.md`: Orquestador — ejecuta el ciclo completo guía → código → auditoría
+- `../software-foundation.md`: Code Review, Testing, Security
+- `../TESTING_GUIDELINES.md`: Base reference for pragmatic testing

@@ -1,6 +1,6 @@
 # Firmware Engineering Foundation
 
-Patrones y reglas para desarrollo embedded C/C++ en microcontroladores (STM32, Cortex-M).
+Patterns and rules for embedded C/C++ development on microcontrollers (STM32, Cortex-M).
 
 ---
 
@@ -10,16 +10,16 @@ Patrones y reglas para desarrollo embedded C/C++ en microcontroladores (STM32, C
 
 | # | Rule | How to verify |
 |---|------|---------------|
-| 1 | `[[nodiscard]]` en TODA función que retorna valor | `grep -c nodiscard` vs `grep -c 'bool\|uint'` |
-| 2 | `std::span` sobre `T* + size` | `grep -rn '\bspan\b' Core/Inc/` |
-| 3 | `std::optional<T>` sobre `bool + T&` | `grep -rn 'optional' Core/Inc/` |
-| 4 | `static constexpr std::array` sobre C arrays | `grep -rn 'static const.*\[\]' Core/Inc/` |
-| 5 | `static_assert` por módulo — mínimo 1 | `grep -c 'static_assert'` por archivo |
-| 6 | RAII guard para estado HW | `grep -rn 'ScopeGuard' Core/` |
-| 7 | `constexpr` todo lo posible | Inspección manual |
-| 8 | `std::variant` dispatch sobre switch | `grep -rn 'std::variant' Core/` |
+| 1 | `[[nodiscard]]` on EVERY function that returns a value | `grep -c nodiscard` vs `grep -c 'bool\|uint'` |
+| 2 | `std::span` instead of `T* + size` | `grep -rn '\bspan\b' Core/Inc/` |
+| 3 | `std::optional<T>` instead of `bool + T&` | `grep -rn 'optional' Core/Inc/` |
+| 4 | `static constexpr std::array` instead of C arrays | `grep -rn 'static const.*\[\]' Core/Inc/` |
+| 5 | `static_assert` per module — minimum 1 | `grep -c 'static_assert'` per file |
+| 6 | RAII guard for HW state | `grep -rn 'ScopeGuard' Core/` |
+| 7 | `constexpr` everything possible | Manual inspection |
+| 8 | `std::variant` dispatch instead of switch | `grep -rn 'std::variant' Core/` |
 
-**Regla de oro:** Si el compilador no puede verificar tu invariante en compile-time, tu diseño no es lo suficientemente expresivo.
+**Golden rule:** If the compiler can't verify your invariant at compile-time, your design isn't expressive enough.
 
 ---
 
@@ -48,17 +48,53 @@ Patrones y reglas para desarrollo embedded C/C++ en microcontroladores (STM32, C
 
 ---
 
+## Memory Safety (ASan / UBSan / Valgrind)
+
+### Mandatory Rules
+
+| Rule | Description |
+|------|-------------|
+| **R1** | Always compile with ASan in Debug: `-fsanitize=address,undefined -fno-omit-frame-pointer` |
+| **R2** | Zero tolerance to memory leaks: `definitely lost` blocks deploy |
+| **R3** | No raw `new`/`delete` — use `std::make_unique`, `std::vector`, RAII |
+| **R4** | No `reinterpret_cast` — use `std::memcpy` for type punning |
+| **R5** | Use `.at()` instead of `operator[]` in debug for bounds checking |
+| **R6** | Check division by zero before critical calculations |
+| **R7** | Verify `int` → `double` conversions don't overflow |
+
+### Finding Classification
+
+| Severity | Tool | Action |
+|----------|------|--------|
+| Critical | ASan (overflow, use-after-free) | Block deploy |
+| Critical | Valgrind (definitely lost) | Block deploy |
+| High | UBSan (signed overflow, nullptr) | Fix immediately |
+| Medium | LSan (memory leak) | Fix this sprint |
+| Low | cppcheck (uninitialized var) | Document |
+| Info | clang-tidy (performance) | Evaluate |
+
+### Frequency
+
+| When | What |
+|------|------|
+| Every PR commit | `cppcheck` + `clang-tidy` |
+| Before merge to main | `ASan + UBSan` (full suite) |
+| Before production deploy | `Valgrind` dry-run |
+| Monthly | Full audit (ASan + UBSan + Valgrind + cppcheck) |
+
+---
+
 ## Testing Tiers
 
-### Tier 1: Compile-Time Assertions (Zero Cost) — OBLIGATORIO
+### Tier 1: Compile-Time Assertions (Zero Cost) — MANDATORY
 
 ```cpp
-static_assert(sizeof(UladPacket_t) == 74U, "Size changed");
+static_assert(sizeof(MyPacket_t) == 74U, "Size changed");
 static_assert(BUFFER_SIZE % 4U == 0U, "Must be 4-byte aligned for DMA");
 static_assert(TABLE.size() > 0);
 ```
 
-Si compila, la condición se cumple. Si no compila, atrapaste un bug antes de flashear.
+If it compiles, the condition holds. If it doesn't compile, you caught a bug before flashing.
 
 ### Tier 2: Off-Target Host Unit Tests
 
@@ -180,7 +216,7 @@ void info(const char* format, ...) {
 }
 ```
 
-En release, `logger_->debug(...)` compila a cero instrucciones. El string ni siquiera está en flash.
+In release, `logger_->debug(...)` compiles to zero instructions. The string isn't even in flash.
 
 ### Template Radio Concept
 
@@ -200,7 +236,7 @@ public:
 };
 ```
 
-Si Lora no satisface el concept, no compila. Cero overhead en runtime.
+If Lora doesn't satisfy the concept, it won't compile. Zero runtime overhead.
 
 ---
 
@@ -210,9 +246,9 @@ Si Lora no satisface el concept, no compila. Cero overhead en runtime.
 
 | Element | Convention | Example |
 |---------|------------|---------|
-| Functions | `snake_case` + module prefix | `ulad_set_gain()` |
+| Functions | `snake_case` + module prefix | `my_module_init()` |
 | Local variables | `snake_case` | `byte_count` |
-| Static variables | `s_` prefix | `static Ulad_t s_instance;` |
+| Static variables | `s_` prefix | `static MyDevice_t s_instance;` |
 | Global variables | `g_` prefix | `volatile uint32_t g_tick_ms;` |
 | Structs / Enums | `PascalCase` + `_t` | `UartRxRing_t` |
 | Constants / Macros | `ALL_CAPS_SNAKE` | `SENSOR_TIMEOUT_MS` |
@@ -221,7 +257,7 @@ Si Lora no satisface el concept, no compila. Cero overhead en runtime.
 
 | Element | Convention | Example |
 |---------|------------|---------|
-| Classes | `PascalCase` | `LoraCommandHandler` |
+| Classes | `PascalCase` | `CommandHandler` |
 | Member variables | `m_` prefix | `m_huart` |
 | Member methods | `snake_case` | `set_frequency()` |
 | Enum class values | `UPPER_SNAKE` | `DeviceOperatingMode::RX_CONTINUOUS` |

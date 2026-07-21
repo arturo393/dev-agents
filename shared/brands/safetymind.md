@@ -29,5 +29,5 @@
 ## UI Principles
 
 - **Atomic Design**: atoms → molecules → organisms → templates
-- **Hooks First**: Toda lógica de negocio en Custom Hooks
+- **Hooks First**: All business logic in Custom Hooks
 - **State Management**: TanStack Query (telemetry) + Zustand (UI state)

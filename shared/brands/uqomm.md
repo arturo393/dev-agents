@@ -2,26 +2,26 @@
 
 ## Color Tokens
 
-| Token | Hex | Uso |
-|-------|-----|-----|
-| Negro | `#10182B` | Fondos, paneles dark |
-| Naranja | `#FF5000` | Acciones primarias, branding. **Nunca** para estados |
-| Blanco | `#FFFFFF` | Texto sobre fondos oscuros |
-| Gris | `#575756` | Textos secundarios |
-| Verde OK | `#2FAF58` | Estado healthy |
-| Amarillo | `#FFB020` | Advertencia |
-| Rojo | `#E53935` | Error/crítico |
+| Token | Hex | Usage |
+|-------|-----|-------|
+| Black | `#10182B` | Backgrounds, dark panels |
+| Orange | `#FF5000` | Primary actions, branding. **Never** for states |
+| White | `#FFFFFF` | Text on dark backgrounds |
+| Gray | `#575756` | Secondary text |
+| Green OK | `#2FAF58` | Healthy state |
+| Yellow | `#FFB020` | Warning |
+| Red | `#E53935` | Error/critical |
 
-**Gradiente oficial:** `linear-gradient(45deg, #10182B, #FF5000)`
+**Official gradient:** `linear-gradient(45deg, #10182B, #FF5000)`
 
 ## UI Principles
 
-- **Keyboard-first**: Todo operable sin mouse
-- **Botones**: Máximo 3 variantes — primary (naranja), secondary (outline), destructive (rojo)
-- **Log panel**: Siempre presente, buffer circular 1000 líneas
-- **Empty state**: [icono] + descripción + causa + acción
-- **WCAG 2.2 AAA**: contraste >= 7:1 normal, >= 4.5:1 grande, touch target >= 44px
-- **Viewports**: HD (1280x720) y FHD (1920x1080)
+- **Keyboard-first**: Everything operable without mouse
+- **Buttons**: Max 3 variants — primary (orange), secondary (outline), destructive (red)
+- **Log panel**: Always present, circular buffer 1000 lines
+- **Empty state**: [icon] + description + cause + action
+- **WCAG 2.2 AAA**: contrast >= 7:1 normal, >= 4.5:1 large, touch target >= 44px
+- **Viewports**: HD (1280x720) and FHD (1920x1080)
 
 ## Typography
 

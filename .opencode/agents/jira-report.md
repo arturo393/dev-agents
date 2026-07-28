@@ -23,7 +23,7 @@ Este agente se apoya en el MCP server ubicado en `/home/arturo/uqomm/sw-jiraanal
 | `jira_jira_search_issues` | Buscar por JQL |
 | `jira_jira_search_issues_in_project` | Issues recientes en un proyecto |
 | `jira_jira_create_issue` | Crear issue (Task, Bug, Story, Epic, Subtarea) |
-| `jira_jira_update_issue` | Actualizar campo: status, duedate, startdate, labels, estimate, assignee, summary, priority |
+| `jira_jira_update_issue` | Actualizar campo: status, duedate, startdate, labels, estimate, assignee, summary, priority, **epic** (asigna a épica) |
 | `jira_jira_add_worklog` | Registrar horas trabajadas |
 | `jira_jira_add_comment` | Agregar comentario |
 | `jira_jira_transition_issue` | Cambiar estado |
@@ -78,6 +78,7 @@ Este agente se apoya en el MCP server ubicado en `/home/arturo/uqomm/sw-jiraanal
 - `estimate` / `estimacion` / `time estimate` — estimación (formato: `30m`, `2h`, `1d`, `1h 30m`)
 - `labels` — JSON array `["tag-1", "tag-2"]` o string separado por `,`/`;`
 - `assignee`, `summary`, `priority`
+- `epic` / `epic link` / `épica` — asigna issue a una épica (value: clave de la épica, ej: `ID-1646`)
 
 **jira_create_issue**:
 - `timeEstimate` opcional; si no se envía, aplica `1h` por defecto para tareas
@@ -220,7 +221,7 @@ jira_jira_create_issue(
   timeEstimate="<estimación>"
 )
 ```
-Luego vincular a la épica con `jira_jira_link_to_epic(epicKey="<epic>", issueKey="<nuevo_issue>")`.
+Luego vincular a la épica con `jira_jira_update_issue(issueKey="<nuevo_issue>", field="epic", value="<epic_key>")`. **NO usar `jira_link_to_epic`** — esa tool crea un link genérico, no asigna la épica correctamente.
 
 **Reglas de formato al crear issues:**
 - Summary: máximo 80 caracteres. Formato: `"<Área>: <acción principal>"`. Ej: `"FW-ULAD: migrar detector DL a PA4"`

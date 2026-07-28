@@ -222,6 +222,10 @@ jira_jira_create_issue(
 ```
 Luego vincular a la épica con `jira_jira_link_to_epic(epicKey="<epic>", issueKey="<nuevo_issue>")`.
 
+**Reglas de formato al crear issues:**
+- Summary: máximo 80 caracteres. Formato: `"<Área>: <acción principal>"`. Ej: `"FW-ULAD: migrar detector DL a PA4"`
+- Description: máximo 5 líneas, texto plano sin markdown. Formato: qué se necesita hacer + contexto breve + criterio de éxito. **No copiar el documento local**. No incluir listas, tablas, hashes ni rutas de archivos
+
 ### 5. Registrar worklogs
 
 ```
@@ -236,7 +240,9 @@ Reglas:
 - 1 worklog por bloque temático
 - Si no se especifican horas → estimar del volumen de commits
 - Formato: `Xh Ym` (ej. `2h 30m`, `45m`, `1h`)
-- **Comentario del worklog: máximo 1 línea, sin markdown, sin bullets**
+- **Comentario del worklog: máximo 1 línea, máximo 100 caracteres, texto plano sin markdown**
+  Formato: `"<verbo en pasado> <qué>"`. Ej: `"Corregido parsing V2 en Tauri GUI"`
+  Prohibido: bold, bullets, listas numeradas, headings, code
 
 ### 6. Actualizar estado, comentario y documento local
 
@@ -261,11 +267,11 @@ jira_jira_bbdd_append_comment(
 ```
 
 **Reglas del comentario:**
-- Máximo 3-4 líneas de texto plano.
-- Sin encabezados (`##`, `###`), sin tablas, sin bullets anidados.
+- Máximo 3 líneas de texto plano (sin markdown). Máximo 300 caracteres.
+- **Prohibido**: **bold**, *italic*, `code`, headings (##, ###), bullet lists, listas numeradas
 - Formato: `Qué se hizo. Estado actual. Próximo paso (si aplica).`
+- Si necesitas énfasis: usa mayúsculas o paréntesis, no markdown
 - Nunca mencionar archivos, rutas, hashes, IDs internos ni términos técnicos.
-- Si hay riesgo o bloqueo, mencionarlo en una línea.
 
 **Actualizar documento local `jira/<issue_key>.md`:**
 
@@ -341,3 +347,5 @@ Tiempo registrado: Xh
 - **Idioma**: español por defecto.
 - **Zona horaria**: `America/Santiago` (`-0400`).
 - **Formato horas**: `Xh Ym`.
+- **Texto breve siempre**: descripciones ≤ 500 chars, comentarios ≤ 300 chars, worklogs ≤ 150 chars, summaries ≤ 80 chars
+- **Si tienes más texto que eso, resúmelo**. Nadie lee párrafos largos en Jira

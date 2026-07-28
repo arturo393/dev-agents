@@ -79,6 +79,7 @@ Este agente se apoya en el MCP server ubicado en `/home/arturo/uqomm/sw-jiraanal
 - `labels` — JSON array `["tag-1", "tag-2"]` o string separado por `,`/`;`
 - `assignee`, `summary`, `priority`
 - `epic` / `epic link` / `épica` — asigna issue a una épica (value: clave de la épica, ej: `ID-1646`)
+- `description` / `descripción` — actualiza descripción del issue (texto plano, se convierte a ADF)
 
 **jira_create_issue**:
 - `timeEstimate` opcional; si no se envía, aplica `1h` por defecto para tareas

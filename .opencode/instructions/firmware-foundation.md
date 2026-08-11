@@ -118,6 +118,26 @@ Add `self_test_run()` called once at boot (after peripheral init, before super-l
 - Failed self-test → log via UART/RTT + flag LED
 - NEVER infinite-hang on failure
 
+### Regla de Oro: Validar el Protocolo Antes de Blindarlo
+
+> No agregues patrones de resiliencia (circuit breakers, ISR guards, memory
+> barriers, retry logic, crash dumps) a una interfaz de comunicación nueva
+> hasta tener un smoke test end-to-end trivial (Tier 3, ~10 líneas) que
+> confirme el protocolo correcto contra el hardware real.
+
+**Por qué:** Blindar un driver que habla el protocolo equivocado no arregla
+nada — solo hace más difícil ver que la causa raíz nunca fue el timing o
+la robustez, sino una asunción de protocolo incorrecta.
+
+**Checklist antes de escribir resiliencia sobre un driver nuevo:**
+1. Existe un test mínimo (`AT\r\n` -> `OK\r\n`, o equivalente) que confirme
+   el protocolo básico contra el hardware real, sin RTOS, sin DMA, sin bridges?
+2. El pin de selección de modo (boot mode, config straps) coincide con el
+   firmware/protocolo que el driver asume? Verificarlo contra la hoja de datos
+   y el esquemático, no contra el SDK de referencia del fabricante.
+3. Si el smoke test falla, la prioridad es corregir el protocolo/modo -- no
+   anadir reintentos, timeouts mas largos, o guards de sincronizacion.
+
 ---
 
 ## Layered Architecture

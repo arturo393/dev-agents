@@ -212,6 +212,87 @@ la deduccion de tipos: conviene aislar el estado compartido en variables propias
 
 ---
 
+## Medir un Embebido sin Enganarse
+
+> Todo lo de esta seccion salio de un dia en que el equipo estaba bien **seis veces** y el
+> instrumento estaba mal. Cada vez el sintoma parecia del hardware.
+
+### Un valor que solo se actualiza al acertar no puede probar una ausencia
+
+El caso: se leyo el RSSI del receptor de LoRa y estaba clavado en su valor inicial. Se concluyo "el
+receptor no corre". **Falso**: el codigo actualiza el RSSI unicamente cuando LLEGA un paquete, asi que
+sin nadie transmitiendo se queda en el inicial aunque el receptor funcione perfecto. Medía el ultimo
+paquete, no el canal.
+
+**Regla:** antes de leer una ausencia como un fallo, buscar en el codigo **cuando se escribe** ese
+valor. Si solo se escribe en el camino de exito, su valor inicial no significa nada.
+
+### Muestrear el PC no distingue "bloqueado" de "no corre"
+
+Se muestreo el PC 18 veces buscando el receptor y las 18 cayeron en el idle task de FreeRTOS. Eso es
+compatible con las dos hipotesis: una tarea que espera con `osDelay` entre sondeos **esta bloqueada**, y
+el CPU aparece en idle corra o no corra lo que se busca.
+
+**Regla:** para saber si un camino se ejecuta, **contar los intentos**, no muestrear donde esta el CPU.
+Un contador de intentos distingue; separar exitos de timeouts distingue mejor: "escucha y no hay nadie"
+frente a "no escucha".
+
+### Cada conexion del depurador puede resetear el objetivo
+
+Un contador de arranques subio de 8 a 33 a 64 entre lecturas y parecia un bucle de reinicios. No lo era:
+**cada sesion de OpenOCD resetea la placa al conectar**, asi que se contaban las propias mediciones.
+
+**Regla:** para medir estabilidad, hacer las dos lecturas **dentro de una sola sesion** del depurador,
+con la espera en el medio. Y para leer un flag de estado, resetear primero: sin reset se lee estado
+viejo de la sesion anterior, que es lo que hizo confundir un `0` con una regresion que no existia.
+
+### Cuando el instrumento no puede fallar, es peor que no tenerlo
+
+Un volcado de HardFault decidia entre MSP y PSP con `tst lr, #4` desde una funcion C normal. El prologo
+del compilador ya habia pisado `LR`, asi que elegia la pila equivocada — y **daba direcciones
+plausibles**: reporto un PC que resulto ser la direccion de un handle de I2C, y mando a buscar durante
+horas una corrupcion que no existia. Un watchpoint sobre esa direccion demostro que nadie la escribia.
+
+**Regla:** un handler de excepcion que lea el marco tiene que ser `__attribute__((naked))` con el
+trabajo en C aparte. Y ante un error de bus **imprecisó**, activar `DISDEFWBUF` (`ACTLR` bit 1) antes de
+sacar conclusiones: sin eso el `PC` apilado no es el del culpable y `BFAR` no vale.
+
+### El watchpoint es el instrumento que no opina
+
+Para "quien escribe esta direccion" y "quien pide este reset", un watchpoint de datos responde sin
+teoria. Dos veces en un dia convirtio una hipotesis en un hecho — y una de esas veces **refuto** la
+hipotesis, que es lo valioso.
+
+**Cuidado con los falsos positivos:** un watchpoint sobre `SCB->AIRCR` para cazar un
+`NVIC_SystemReset()` dispara tambien en `HAL_NVIC_SetPriorityGrouping`, que escribe el mismo registro
+legitimamente. Leer el VALOR escrito, no solo el hecho de que se escribio.
+
+---
+
+## El `.ioc` No Es el Esquematico
+
+**El `.ioc` describe como esta configurado el microcontrolador. El esquematico describe que hay en la
+placa.** No son lo mismo, y cuando una senal no llega al micro **el `.ioc` muestra el residuo, no la
+intencion**.
+
+Cinco afirmaciones sobre hardware salieron mal en un dia, todas por leer el `.ioc`, el codigo o un
+documento de plan en vez de el esquematico:
+
+| Se afirmo | Era |
+|---|---|
+| "no existe el hardware para medir potencia de salida" | el detector esta en la placa; falta poblar un puente de 0 ohm marcado **DNP** |
+| "ese pin es un control, no mide nada" | es la salida del detector; el `.ioc` lo declara salida **porque** la senal no llega |
+| "falta el ADC de ese riel, es limitacion de hardware" | la medicion existe, por otro camino |
+
+**Regla:** cualquier afirmacion de la forma "el hardware no puede medir X" se verifica **en el
+esquematico** antes de decirla. Si el esquematico no esta disponible, la afirmacion se formula como
+pregunta.
+
+**Y buscar `DNP`.** Un componente sin poblar convierte una capacidad que existe en una que no llega, sin
+dejar rastro en el codigo ni en el `.ioc`.
+
+---
+
 ## Provenance del Binario
 
 Un firmware desplegado tiene que poder **reconstruirse desde lo que el mismo reporta**.

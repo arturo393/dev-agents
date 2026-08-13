@@ -101,6 +101,15 @@ does not fail, the test is decorative.
 Evidence: a firmware review found **six** tests written with `CHECK_DIES` that certified bugs. Only
 the negative control distinguished the real fixes from the no-ops.
 
+### A test file that is not in the build list is zero coverage, silently
+
+Evidence: a new contract test was written, the suite ran green, and the test **never executed** — the
+harness listed its targets explicitly instead of globbing, so an unregistered file is simply absent.
+It was caught only by looking for its own line in the output and not finding it.
+
+**Rule:** after adding a test, confirm **its name appears in the run output**. A green suite is not
+evidence that your test ran.
+
 ### The tests must compile the artifact that ships
 
 Green tests over code that is not deployed measure nothing about production.
@@ -204,6 +213,20 @@ nothing enforces it.
 | Same transport ≠ same command space | one device may route the same code to different handlers by port |
 | A shared fix goes upstream **before** being declared done | a local fix leaves the other consumers broken and is lost on the next update |
 | A device must reject what is not addressed to it | otherwise a tool for another product can brick it |
+
+### A sentinel means what the *consumer* decides, not what the producer intended
+
+`0xFFFF` for «not measurable» is honest only if the reader treats it as absent. A decoder that
+**clamps to a range** turns that same sentinel into the *most favourable reading in the range*.
+
+Evidence: a firmware used `0xFFFF` for «conversion failed», correctly, across its own commands. The
+legacy consumer in another repo clamped ADC-to-dBm, so `0xFFFF` decoded to **0 dBm — perfect output**.
+Three unmeasurable fields would have made a device with a disconnected detector look *healthy*. They
+had to be sent at the *minimum* of the range instead, which decodes to an alarm.
+
+**Rule:** before choosing a sentinel for a cross-repo format, read the consumer's decoder. If it
+cannot express absence, pick the value that **raises an alarm**, not the one that reassures — a false
+warning gets investigated, a false healthy kills equipment. And state the choice where it is made.
 
 Evidence: a command marked destructive in one repo's docs was harmless there and destructive under
 a different code; fixes to a shared submodule lived on a single machine while two other products

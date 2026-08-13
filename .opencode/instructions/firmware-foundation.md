@@ -140,6 +140,94 @@ la robustez, sino una asunción de protocolo incorrecta.
 
 ---
 
+## Escribir un Parametro No Es Aplicarlo
+
+En un periferico con registros, **persistir un valor y programarlo son dos operaciones
+distintas**. Un setter que guarda en memoria y devuelve el valor guardado parece correcto
+en todo camino de prueba que no mire el hardware.
+
+### La asimetria que lo esconde
+
+Un mismo defecto puede ser invisible en un sentido y fatal en el otro:
+
+| Camino | Reprograma | Efecto del defecto |
+|---|---|---|
+| Transmision | en cada envio, porque tiene que fijar la frecuencia | **se auto-cura**: nadie lo nota |
+| Recepcion | una sola vez, al entrar en modo escucha | **queda sordo hasta el reset** |
+
+Por eso el sintoma aparece solo de un lado, y el lado que funciona hace creer que el
+codigo es correcto.
+
+### Checklist al tocar cualquier setter de periferico
+
+| # | Pregunta |
+|---|---|
+| 1 | Despues de guardar, ¿algo **escribe el registro** del periferico? |
+| 2 | La funcion que configura, ¿deja el periferico en el modo en que lo encontro? |
+| 3 | El valor que se devuelve, ¿sale del **hardware** o de la variable recien escrita? |
+| 4 | ¿Existe un camino que lo aplique **sin** reiniciar el equipo? |
+
+**Regla:** si la respuesta a la 4 es no, decirlo en la respuesta al usuario y en la
+documentacion. Un cambio que exige reset y no lo declara es peor que uno que falla, porque
+el operador se va convencido de que quedo aplicado.
+
+**Patron preferido:** que la funcion de configuracion restaure el modo con un `ScopeGuard`
+RAII, para que el invariante no dependa de que cada llamador se acuerde. Si se difiere,
+declararlo como deuda y decir por que.
+
+---
+
+## Estado Compartido con ISR: Diferir, No Bloquear
+
+Nunca hacer E/S bloqueante dentro de un handler. Ademas de lo obvio:
+
+- **Los timeouts de la HAL no pueden expirar.** Se miden con `HAL_GetTick()`, y si SysTick
+  tiene prioridad mas baja que el handler, el tick esta **congelado** ahi dentro. Un bus
+  trabado gira para siempre, y el watchdog tampoco salva si su refresh vive en el
+  super-loop.
+- **Reentrancia sobre el mismo handle.** Un flanco a mitad de transaccion la corrompe.
+- **Sin debounce**, un contacto que rebota escribe en cada flanco.
+
+**Patron:** la ISR lee y marca; el super-loop persiste.
+
+```c
+/* En la ISR */
+valor_isr = leer_pin();
+pendiente  = true;
+
+/* En el super-loop */
+if (pendiente) {
+    pendiente = false;      /* limpiar ANTES de leer el valor */
+    persistir(valor_isr);
+}
+```
+
+**El orden importa:** limpiar la marca antes de leer el valor pierde, como maximo, una
+escritura redundante. Al reves —leer y despues limpiar— se pierde el flanco que llegue en
+el medio, que es una actualizacion real.
+
+**Sobre `volatile`:** va en las variables que comparte la ISR, no en las que solo usa el
+lazo. Si una variable se pasa a plantillas o a contenedores, marcarla `volatile` complica
+la deduccion de tipos: conviene aislar el estado compartido en variables propias.
+
+---
+
+## Provenance del Binario
+
+Un firmware desplegado tiene que poder **reconstruirse desde lo que el mismo reporta**.
+
+| Regla | Por que |
+|---|---|
+| La version incluye el commit **y** un marcador de arbol sucio | un binario compilado sobre cambios sin commitear no sale de ningun commit |
+| La config del generador de codigo coincide con el codigo | regenerar desde el IDE puede cambiar el comportamiento en silencio |
+| Un `static_assert` protege los invariantes de tiempo | un equipo brickeado en terreno se vuelve un error de compilacion |
+
+**Caso:** un `.ioc` declaraba un prescaler de watchdog distinto al del codigo. Regenerar
+bajaba el timeout de 24 s a 3 s, por debajo del retardo de arranque: ciclo de reset sin
+salida. No fallaba ese dia; fallaba la proxima vez que alguien abriera el `.ioc`.
+
+---
+
 ## Layered Architecture
 
 ### Mandatory Separation

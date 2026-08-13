@@ -76,6 +76,139 @@ Critical/High block progress. Medium → fix + continue. Low → log.
 
 **Golden rule:** No test, no production change. Every fix includes its test.
 
+### Test polarity: a test that documents a defect is not a test that prevents it
+
+A test written to **prove a bug exists** passes *because* the bug exists. When someone fixes the
+bug, that test fails — and the natural reaction is to think the fix is wrong.
+
+Both forms are legitimate, but they must be labeled:
+
+| Form | Asserts | When the bug is fixed |
+|---|---|---|
+| `CHECK_DIES(...)` / `assert(crashes)` | the defect is present | **fails** — must be inverted |
+| `CHECK(survives)` / `assert(bounded)` | the protection works | keeps passing |
+
+**Rule:** when you fix a defect that had a documenting test, invert the test in the same commit.
+Leaving it certifies the defect forever.
+
+### Negative control: the only proof that a test tests something
+
+A test that passes with the defect **present and absent** proves nothing.
+
+**Rule:** after writing or fixing a test, revert the fix, confirm the test fails, restore. If it
+does not fail, the test is decorative.
+
+Evidence: a firmware review found **six** tests written with `CHECK_DIES` that certified bugs. Only
+the negative control distinguished the real fixes from the no-ops.
+
+### The tests must compile the artifact that ships
+
+Green tests over code that is not deployed measure nothing about production.
+
+**Rule:** verify which target the test harness builds. If it is not the one in the field, that is a
+coverage gap of 100 %, not a detail.
+
+Evidence: a repo had 61 passing tests that compiled a variant, while the deployed firmware had
+**zero** host coverage — and extending the harness found a wrong assumption on the first run.
+
+---
+
+## Verification Integrity
+
+> The highest-yield question when reviewing any system:
+> **does this confirmation look at the effect, or at the intention?**
+
+Not a single rule of MISRA, the C++20 checklist or the Review Pillars catches this class. It was
+found seven times in one week, across firmware, a server, a CLI tool and a build system:
+
+| Symptom | What it reported | What it did |
+|---|---|---|
+| Log then write | «will not save» | saved |
+| Readback after a write | the requested value | never applied it to the hardware |
+| Function returning `bool` | success or failure | the only `return false` was commented out |
+| `if (call() == OK) { }` | checks the status | empty body: discards it |
+| Tool reporting `success: true` | the update happened | the HTTP call was missing |
+| Version string in a binary | the commit it was built from | that commit cannot produce that binary |
+| Test asserting a crash | the code is protected | it certified the bug |
+
+### How to detect it
+
+| Ask | Red flag |
+|---|---|
+| What does the confirmation **read**? | the same variable that was just written |
+| Can this function ever return failure? | the only failure path is commented out or unreachable |
+| Does the `if` on the status **do** anything? | empty body, or only logs at debug level |
+| Does the success path verify the **side effect**? | it verifies the request, not the result |
+| Can the reported provenance regenerate the artifact? | build metadata taken from HEAD, ignoring a dirty tree |
+
+**Rule:** a confirmation that cannot fail is worse than no confirmation, because it manufactures
+confidence. Either make it able to fail, or remove it and say plainly that the operation is
+unverified.
+
+---
+
+## Method Before Diagnosis
+
+### Read what already exists before deriving it again
+
+**Rule:** before diagnosing, list and skim `docs/`, `CHANGELOG`, and prior audits **of the repo you
+are in**. Cross-reference every finding against them before calling it new.
+
+Evidence: two critical defects were re-derived from scratch, one of them with an hour of hardware
+debugging — both were already written in the same repository, with the same mechanism identified.
+
+**Corollary on symbols in audit documents:** verify what a mark means before trusting it. In one
+audit `✅` meant *confidence level* («verified by reading the code»), not *fixed*. Ten criticals
+looked closed and were open.
+
+### Never trust a `grep` count without looking at the matches
+
+**Rule:** a count only answers «how many lines match», not «does the defect exist». Read the
+matches. Comments describing a bug match the same pattern as the bug.
+
+### Say «verified» only for what was executed
+
+**Rule:** separate what was *measured* from what was *inferred*. When a conclusion depends on an
+assumption — a compiler flag, a buffer size, a call order — verify the assumption explicitly and
+say so. If it cannot be verified, state the conclusion as conditional.
+
+Evidence: an entire causal chain about a crash depended on `-fno-exceptions` being set. It was, but
+nobody had checked until it was written down as a dependency.
+
+---
+
+## Build Provenance
+
+Firmware and any artifact deployed to a device must be **reproducible from what it reports**.
+
+| Rule | Why |
+|---|---|
+| The version must include the commit **and** a dirty marker | a build over uncommitted changes is not reproducible from any commit |
+| Generated-code config must agree with the source of truth | regenerating from the IDE can silently ship different behavior |
+| A compile-time assertion should protect timing invariants | a bricked device in the field becomes a build error |
+
+Evidence: a fleet reported `2.1.0+<sha>` where that commit did not contain the code running on it —
+it had been built with uncommitted changes, and the very command added to identify a unit returned
+an answer that could not rebuild it.
+
+---
+
+## Cross-Repo Contracts
+
+When several products share a framing, a bus or a library, the contract lives **between** repos and
+nothing enforces it.
+
+| Rule | Why |
+|---|---|
+| One source of truth per opcode, encoding and constant | the same byte meaning two things is a permanent trap |
+| Same transport ≠ same command space | one device may route the same code to different handlers by port |
+| A shared fix goes upstream **before** being declared done | a local fix leaves the other consumers broken and is lost on the next update |
+| A device must reject what is not addressed to it | otherwise a tool for another product can brick it |
+
+Evidence: a command marked destructive in one repo's docs was harmless there and destructive under
+a different code; fixes to a shared submodule lived on a single machine while two other products
+kept the same bugs.
+
 ---
 
 ## Code UX Principles

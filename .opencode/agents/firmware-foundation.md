@@ -52,6 +52,35 @@ Apply the patterns from firmware-foundation.md:
 - C: snake_case + module prefix, s_ for static, g_ for global
 - C++: PascalCase for classes, m_ for members, snake_case for methods
 
+### Escribir un parametro no es aplicarlo
+
+Persistir un valor y programar el registro son operaciones distintas. Al revisar cualquier
+setter de periferico:
+
+1. Despues de guardar, ¿algo escribe el registro del periferico?
+2. La funcion que configura, ¿restaura el modo en que lo encontro?
+3. Lo que devuelve, ¿sale del hardware o de la variable recien escrita?
+4. ¿Hay un camino que lo aplique **sin** reiniciar el equipo?
+
+Ojo con la asimetria TX/RX: el camino de transmision suele reprogramar en cada envio y
+**se auto-cura**, mientras el de recepcion queda sordo hasta el reset. El lado que
+funciona hace creer que el codigo es correcto.
+
+### Estado compartido con ISR
+
+La ISR lee y marca; el super-loop persiste. Nunca E/S bloqueante en un handler: los
+timeouts de la HAL usan `HAL_GetTick()`, congelado ahi dentro si SysTick tiene menor
+prioridad. Limpiar la marca **antes** de leer el valor.
+
+### Provenance del binario
+
+La version tiene que incluir el commit **y** un marcador de arbol sucio. Un firmware que
+reporta un commit que no puede generarlo es irreproducible, y el comando que existe para
+identificar equipos devuelve algo que no sirve.
+
+> Detalle completo, con los casos reales detras de cada regla, en `firmware-foundation.md`.
+> Esta lista es un puntero, no una copia: si difieren, gana el archivo de instrucciones.
+
 ## Usage Examples
 
 - `@firmware-foundation review this STM32 driver`

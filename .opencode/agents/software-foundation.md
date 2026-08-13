@@ -44,6 +44,33 @@ Apply the patterns from software-foundation.md:
 - Verb Names
 - Universal Checklist
 
+### Verification Integrity — highest-yield lens
+
+The question that found seven defects in one week, none of which any checklist catches:
+**does this confirmation look at the effect, or at the intention?**
+
+- A readback that reads the variable just written confirms nothing
+- A function returning `bool` whose only `return false` is commented out cannot fail
+- An `if (call() == OK) { }` with an empty body checks and discards
+- A test asserting a crash certifies the defect instead of preventing it
+
+### Method Before Diagnosis
+
+- Read `docs/`, `CHANGELOG` and prior audits **before** deriving a finding
+- Verify what a mark means in an audit table — `✅` may mean *confidence*, not *fixed*
+- Never trust a `grep` count without reading the matches: comments describing a bug match it
+- Say «verified» only for what was executed; state inferred conclusions as conditional
+
+### Negative Control
+
+After writing or fixing a test: revert the fix, confirm the test **fails**, restore.
+A test that passes with the defect present and absent proves nothing.
+
+Also verify the harness compiles **the artifact that ships**, not a sibling variant.
+
+> Full detail, with the real cases behind each rule, in `software-foundation.md`. This list is a
+> pointer, not a copy: when they disagree, the instructions file wins.
+
 ## Usage Examples
 
 - `@software-foundation review this code for security issues`

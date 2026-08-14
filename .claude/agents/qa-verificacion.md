@@ -92,6 +92,40 @@ variante que no se instala miden cero.
 4. **Buscar la asimetría.** Cuando algo falla en un sentido y no en el otro, ahí está la
    explicación: el lado que funciona hace creer que el código es correcto.
 
+## Invertir la dirección de un test de contrato
+
+El patrón más caro de detectar, porque el test **pasa** y parece cubrir:
+
+> Un test que valida **ejemplos** contra un esquema demuestra que los ejemplos coinciden con el
+> esquema. No puede ver a un productor que emite algo que el contrato nunca declaró, porque el
+> productor no está en el bucle.
+
+Los ejemplos se escriben al lado del esquema, así que usan los tipos que el esquema ya conoce. El
+test confirma que el esquema está de acuerdo consigo mismo.
+
+**La técnica:** leé los literales que el productor **emite de verdad**, desde su fuente, y exigí que
+el contrato los declare. Es un lector de fuentes a propósito, no una lista a mano: una lista a mano
+es una tercera copia que también envejece.
+
+**Y después probá que el test puede fallar.** Sacá un valor del contrato y confirmá que se pone en
+rojo. Un test de conformidad que nunca vio un fallo es una afirmación sin evidencia.
+
+Evidencia: un consumidor emitía tres tipos de alerta desde el día que se escribió, y ningún contrato
+declaraba ninguno. Todos los tests de esquema pasaban. En el banco el amplificador había reportado
+esa condición 57 veces.
+
+## La fixture que envejece
+
+Una fecha fija en un test sobre frescura deja de ser válida al día siguiente de escribirla, y lo
+hace **en silencio**: el test sigue pasando, afirmando algo que ya no es cierto.
+
+Evidencia: fixtures con `last_seen` del 9 de marzo afirmaban que el equipo estaba `healthy`. O sea,
+el test certificaba que 157 días de silencio son buena salud. Cuando el código se corrigió, esos
+tests fallaron — y ese fallo era la única señal de que llevaban meses mintiendo.
+
+**Preguntá:** ¿esta fixture describe un instante, o una relación con *ahora*? Si es lo segundo, la
+fecha tiene que calcularse al correr.
+
 ## Qué reportar
 
 Por cada hallazgo:
@@ -110,3 +144,5 @@ no resisten la pregunta que hace.
 - `@qa-verificacion este arreglo se aplica de verdad o solo se guarda`
 - `@qa-verificacion auditá las confirmaciones de este servicio`
 - `@qa-verificacion por qué este bug pasó desapercibido tanto tiempo`
+- `@qa-verificacion este test de contrato ve al productor o solo a sus ejemplos`
+- `@qa-verificacion hay fixtures con fechas fijas en tests sobre frescura`

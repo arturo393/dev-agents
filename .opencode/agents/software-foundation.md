@@ -53,6 +53,31 @@ The question that found seven defects in one week, none of which any checklist c
 - A function returning `bool` whose only `return false` is commented out cannot fail
 - An `if (call() == OK) { }` with an empty body checks and discards
 - A test asserting a crash certifies the defect instead of preventing it
+- A fixture with a hardcoded date, in a test about freshness, stops being true the next day
+- A schema test over hand-written examples only confirms the schema agrees with itself:
+  read the **producer's** literals and require the contract to declare them
+
+### State With No Age
+
+A stored value can be **true and expired at the same time**. A field written only when new data
+arrives keeps its last value forever, and every layer that renders it repeats a claim about *now*.
+
+- Present derived state **with its age**; elapsed time, not a timestamp, when the question is freshness
+- Past the threshold show the staleness, keeping the reported value as history
+- The UI threshold must be the **same one** the alarm uses, read from the same place
+- When several producers write to one collection, enumerate the identity fields: a reader that
+  assumes one silently drops whole families
+
+### Chains with nobody on the other side
+
+A queue with a consumer and no producer raises nothing anywhere. Enumerate producers and consumers
+**separately** and diff the sets — following the path from one end cannot tell "empty" from "idle".
+
+### Duplication guarded by a comment
+
+`@mirror-of ... keep in sync` is a wish, not a mechanism. Make it one file with a parameter, or say
+what differs and why. And before proposing a removal, diff what the files **render**, not how they
+look: three dashboards that looked identical had 8, 15 and 8 disjoint columns.
 
 ### Method Before Diagnosis
 

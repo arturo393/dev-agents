@@ -139,6 +139,8 @@ found seven times in one week, across firmware, a server, a CLI tool and a build
 | Tool reporting `success: true` | the update happened | the HTTP call was missing |
 | Version string in a binary | the commit it was built from | that commit cannot produce that binary |
 | Test asserting a crash | the code is protected | it certified the bug |
+| Fixture with a hardcoded date | the device is `healthy` | it asserted health for 157 days of silence |
+| Schema test over hand-written examples | producer and contract agree | the examples used the types the schema already knew |
 
 ### How to detect it
 
@@ -149,6 +151,21 @@ found seven times in one week, across firmware, a server, a CLI tool and a build
 | Does the `if` on the status **do** anything? | empty body, or only logs at debug level |
 | Does the success path verify the **side effect**? | it verifies the request, not the result |
 | Can the reported provenance regenerate the artifact? | build metadata taken from HEAD, ignoring a dirty tree |
+| Does the fixture age? | a fixed date in a test about freshness stops being valid the day after it was written |
+| Does the conformance test read the **producer**, or an example? | an example written next to the schema can only confirm the schema agrees with itself |
+
+### Invert the direction of a conformance test
+
+A test that validates *examples* against a schema proves the examples match. It cannot see a
+producer that emits something the contract never declared, because the producer is not in the loop.
+
+**Rule:** read the literals the producer actually emits — from its source — and require the contract
+to declare them. Then verify the test can fail: remove one value from the contract and confirm it
+turns red.
+
+Evidence: three alert types were emitted by a consumer since the day it was written, and no contract
+declared any of them. Every schema test passed. In the lab the amplifier had reported the condition
+57 times. A test reading the producer's literals found it in one run.
 
 **Rule:** a confirmation that cannot fail is worse than no confirmation, because it manufactures
 confidence. Either make it able to fail, or remove it and say plainly that the operation is
@@ -224,6 +241,22 @@ legacy consumer in another repo clamped ADC-to-dBm, so `0xFFFF` decoded to **0 d
 Three unmeasurable fields would have made a device with a disconnected detector look *healthy*. They
 had to be sent at the *minimum* of the range instead, which decodes to an alarm.
 
+### A chain wired at both ends and empty in the middle raises nothing
+
+A queue with a consumer and no producer is not an error in any layer. The consumer waits, the
+endpoint returns blanks, the collection stays empty, the subscriber never fires — and all of it
+looks exactly like "nothing happened yet".
+
+Evidence: `gateway_status` had a consumer, a collection, an HTTP endpoint and a WebSocket event, and
+the frontend subscribed to it. Nobody ever published. It went unnoticed because the panel showed the
+result from the **synchronous HTTP response** of the same operation, so the visible path worked. The
+producer had even been designed — the publisher's own signature accepted the non-durable flag and
+its docstring named that queue.
+
+**Rule:** when auditing a chain, enumerate producers and consumers **separately** and diff the two
+sets. Do not follow the path from one end: a hop with nobody on the other side answers the same as
+one that simply has no traffic yet.
+
 **Rule:** before choosing a sentinel for a cross-repo format, read the consumer's decoder. If it
 cannot express absence, pick the value that **raises an alarm**, not the one that reassures — a false
 warning gets investigated, a false healthy kills equipment. And state the choice where it is made.
@@ -274,6 +307,41 @@ unprotected resource was an experiment. The flag encoded knowledge no inventory 
 
 ---
 
+## State With No Age
+
+> A stored value can be **true and expired at the same time**. Verification Integrity asks whether
+> a confirmation looks at the effect; this asks whether the effect it looked at is **still true**.
+
+A field written only when new data arrives keeps its last value forever. Nothing is corrupted,
+nothing errors, and every layer that renders it repeats a statement that stopped being true.
+
+Evidence: `devices.status` was written only on measurement arrival. A device that lost power kept
+`healthy` **in the table and green on the map**, while a separate watchdog was already raising a
+silence alert for it. Three views of the same equipment, two of them lying. The only clue was a
+`last_seen` in absolute format, which makes the reader do the arithmetic.
+
+| Rule | Why |
+|---|---|
+| Present derived state **with its age**, never alone | the age is what turns a value into a claim about *now* |
+| Show elapsed time, not a timestamp, when the question is freshness | "3 min ago" answers it; "13/08/2026, 20:35:11" delegates it to the reader |
+| Past the threshold, show the **staleness**, not the stored value | keep the reported value visible, but as history: in a tooltip, dated |
+| The UI threshold must be the **same one** the alarm uses, read from the same place | otherwise the screen and the alert tell different stories about the same device |
+| A value that never arrived is not the same as one that expired | "never" and "stale" have different causes and different fixes |
+
+### The same entity, keyed differently in the same store
+
+A reader that assumes one identifier field silently drops whole families — an empty id is not an
+error anywhere, it is a row that quietly stops existing.
+
+Evidence: `devices` held `device_id`, `vlad_id` and `amplifier_id_str` for three families. A new
+watchdog read only `device_id`; two of the three families disappeared from supervision **without a
+single error**, and the one device on the bench would never have alerted.
+
+**Rule:** when several producers write to one collection, enumerate the identity fields before
+reading it, and make the reader fail loudly on an unrecognised shape rather than skipping it.
+
+---
+
 ## Code UX Principles
 
 ### 3-Second Scan
@@ -317,6 +385,18 @@ Methods organized by usage order, not by type:
 | Chunking | Small sections, short lists |
 | Signposting | Headings, labels, callouts |
 | Recognition over recall | Tables, checklists, templates |
+
+### A decision written as a pending item invites its own reversal
+
+"Not configurable **yet**", "still pending" and "TODO" describe a gap. If what is really there is a
+**decision**, that wording asks the next reader — or the next agent — to undo it.
+
+**Rule:** write the decision, its reason, and the observation that would change it. "It stays a
+constant because this family is going to be replaced; if it starts needing adjustment often, that is
+the signal that the decision changed."
+
+Evidence: a comment saying a family's alert config "does not exist yet" was written by the same
+person who had just decided it never would.
 
 ### Rules
 - Every document answers a real question
@@ -399,6 +479,33 @@ Dead code in the binary:
 | P2 | Unused dependencies in build files | Sprint planning |
 | P3 | Old backup files (>30 days) | Monthly cleanup |
 | P4 | Rotational logs (>7 days) | Automate with logrotate |
+
+### Duplication guarded by a comment is not a mechanism
+
+`@mirror-of ... keep in sync` is a wish. It has no enforcement and no failure mode: the copies drift
+and nothing reports it.
+
+Evidence, all found the same day: one mirror's label table named five alert types its device never
+emitted and none of the six it did; two modals kept their labels in a language the product had
+migrated away from; and the `@mirror-of` pointers themselves referenced a directory deleted hours
+earlier. **The mirror could not keep its own pointer current.**
+
+**Rule:** if two files must stay identical, make them one file with a parameter. If they must differ,
+delete the comment and say what differs and why — a promise nobody can keep is worse than none,
+because it stops the next reader from looking.
+
+### Before proposing a removal, check the thing is actually duplicated
+
+Surface similarity is not sameness. Three files of the same length and shape can be three different
+problems.
+
+Evidence: three dashboards looked like triplets and a single list with a filter was proposed. Their
+columns were 8, 15 and 8 **and disjoint**: the merged table would have had ~25 columns with each row
+filling 4 to 8. What was duplicated was the scaffolding — search, pagination, export, empty state —
+not the columns, which are the part that *must* differ.
+
+**Rule:** compare what the files *say*, not how they look. Diff the data they render before
+concluding one of them is redundant.
 
 ### Anti-patterns
 

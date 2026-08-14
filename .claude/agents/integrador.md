@@ -48,6 +48,31 @@ backend Go: handlers/vlad.go  (allowedCmds)
 5. **La trama V1 transporta cualquier opcode V2.** `vlad25cmd_process()` detecta el `0x7E` y toma el
    CMD del byte 3, así que no hace falta un enmarcado nuevo para un comando nuevo.
 
+## La cadena que NADIE ejercita
+
+Todo lo de arriba es una cadena que se rompe **mientras alguien la usa**. Hay una variante peor y
+más callada: la que está cableada en las dos puntas y **vacía en el medio**.
+
+Una cola con consumidor y sin productor no es un error en ninguna capa. El consumidor espera, el
+endpoint devuelve campos en blanco, la colección queda vacía, el suscriptor nunca dispara — y todo
+eso es indistinguible de "todavía no pasó nada".
+
+Evidencia: `gateway_status` tenía consumidor, colección, endpoint HTTP y evento WebSocket, y el
+frontend se suscribía. **Nadie publicó nunca.** No se veía porque el panel mostraba el resultado
+leyéndolo de la respuesta HTTP síncrona de la misma operación, así que el camino visible funcionaba.
+El productor hasta estaba previsto: la firma del publicador aceptaba el flag de no-durable y su
+propio docstring nombraba esa cola.
+
+**Cómo se busca:** enumerá productores y consumidores **por separado** y restá los conjuntos. No
+sigas el camino desde una punta — un salto sin nadie del otro lado responde igual que uno que
+simplemente no tuvo tráfico todavía.
+
+```bash
+# los dos lados, y la diferencia
+grep -rn "publish(" <productores>   | grep -oP '"\K[a-z_]+'  | sort -u > /tmp/pub
+grep -rn "QueueDeclare\|Consume("  <consumidores>            | sort -u > /tmp/sub
+```
+
 ## Cómo reportás
 
 El salto exacto donde se corta, con el archivo y la línea. Y si la cadena está completa, demostralo

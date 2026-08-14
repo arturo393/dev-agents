@@ -234,6 +234,46 @@ kept the same bugs.
 
 ---
 
+## Irreversible Operations
+
+Deleting infrastructure, releasing an address, dropping data. The class where being right afterwards
+is worthless.
+
+| Rule | Why |
+|---|---|
+| Snapshot **before** deleting, and verify the snapshot is `READY` with non-zero size | a restore point you intended is not a restore point you have |
+| Delete the **name** before the **address** | a DNS record left pointing at a released IP is a subdomain takeover, and the window is real |
+| Deleting a parent does not delete its children | a disk with `autoDelete=false` outlives its VM and keeps billing, invisibly |
+| Order the work by **increasing risk**, not decreasing cost | the cheapest safe action first buys information for the expensive one |
+| Waking a dormant system can act **outward** | queued jobs fire on boot; cut the outbound path *before* starting, not after |
+
+### Identify by effect, not by name
+
+Names are opinion; routing is fact. Before touching anything, resolve the chain end to end: what does
+the public record point to, what is that address attached to, what is actually running, and what does
+it serve when you bypass the name entirely.
+
+Evidence: the production website ran on a VM called `...-test-...`, while the instance named like the
+official one had been off for months. Anyone reading the inventory would have concluded the opposite.
+
+### A backup that exists is not a backup that works
+
+Same failure class as **Verification Integrity**: the existence of a backup is the intention, its
+restorability is the effect. Compare its size against the source before trusting it.
+
+Evidence: a machine image of a 300 GB disk weighed **0.2 GB**; a fresh snapshot of the same disk
+weighed **26.9 GB**. That "backup" had been empty for years and nobody knew.
+
+### A protection flag is a human signal, not an obstacle
+
+When a resource carries a deliberate lock (deletion protection, immutability, a branch rule), stopping
+and asking is the correct behaviour. Removing it is a decision that belongs to whoever set it.
+
+Evidence: the locks in one project turned out to mark exactly the real services, while every
+unprotected resource was an experiment. The flag encoded knowledge no inventory did.
+
+---
+
 ## Code UX Principles
 
 ### 3-Second Scan

@@ -116,6 +116,33 @@ Este agente se apoya en el MCP server ubicado en `/home/arturo/uqomm/sw-jiraanal
 | avgCycleTime (días) | ≤ 5 | ≤ 10 |
 | reworkRate | ≤ 10% | ≤ 20% |
 
+## Jerarquía: dónde va cada cosa
+
+Tres niveles, y cada uno responde a una pregunta distinta. **Antes de crear un issue, decidí el
+nivel; si no encaja en ninguno, probablemente no hace falta el issue.**
+
+| Nivel | Qué es | Quién lo lee | Ejemplo |
+|---|---|---|---|
+| **Épica** | El proyecto | Dirección | ID-147 «Proyecto Compatibilidad» |
+| **Tarea** | Un bloque de trabajo con resultado propio, **en lenguaje ejecutivo** | Jefatura | «Tarea D: Hardware — gateway» |
+| **Subtarea** | El trabajo específico y técnico | Quien lo ejecuta | «Fabricación y envío de la PCB» |
+
+**La regla que más se incumple: NO crear Tareas sueltas para trabajo técnico.** Si lo que vas a
+crear es un paso concreto de algo que ya existe, es una **subtarea de esa Tarea**, no una Tarea
+nueva. Una épica con quince Tareas planas no se puede leer a nivel ejecutivo, que es justamente
+para lo que existe ese nivel.
+
+**Antes de crear, buscá el padre.** Recorré las Tareas de la épica y elegí la que contiene el
+trabajo. Sólo si ninguna lo contiene se justifica una Tarea nueva — y entonces su nombre tiene que
+poder leerlo alguien de gestión.
+
+> ⚠ **Jira NO convierte Tarea → Subtarea por API** en proyectos company-managed: devuelve
+> HTTP 400. Si el nivel se equivoca, la corrección es crear la subtarea bajo el padre correcto y
+> cancelar la Tarea suelta apuntando a la nueva. Por eso conviene acertar a la primera.
+>
+> Pasó el 19-Ago-2026 con ID-1850 e ID-1851, que nacieron como Tareas sueltas y hubo que
+> recrearlas como ID-1857 e ID-1858 bajo ID-1680.
+
 ## Parámetros
 
 El usuario debe proveer:
@@ -240,15 +267,17 @@ Reglas:
 - 1 worklog por bloque temático
 - Si no se especifican horas → estimar del volumen de commits
 - Formato: `Xh Ym` (ej. `2h 30m`, `45m`, `1h`)
-- **Comentario del worklog: máximo 1 línea, máximo 100 caracteres, texto plano sin markdown**
+- **Comentario del worklog: 1 línea, ≤ 150 caracteres, texto plano sin markdown**
   Formato: `"<verbo en pasado> <qué>"`. Ej: `"Corregido parsing V2 en Tauri GUI"`
   Prohibido: bold, bullets, listas numeradas, headings, code
+  Si el bloque temático da para más de una línea, **subir de nivel** (ver *Resumir, no cortar*):
+  un worklog describe el bloque completo, no el primer commit del bloque
 
 ### 6. Actualizar estado, comentario y documento local
 
 - Si todo está completo → transicionar a "Revisión" o "Done"
 - Si hay trabajo activo → mantener "En curso"
-- Agregar **un comentario ejecutivo**: máximo 3-4 líneas, sin secciones, sin tablas
+- Agregar **un comentario ejecutivo**: hasta 3 líneas, sin secciones, sin tablas
 
 ```
 mcp__jira__jira_add_comment(
@@ -267,11 +296,13 @@ mcp__jira__jira_bbdd_append_comment(
 ```
 
 **Reglas del comentario:**
-- Máximo 3 líneas de texto plano (sin markdown). Máximo 300 caracteres.
+- Hasta 3 líneas de texto plano (sin markdown), ≤ 300 caracteres, **completas**
 - **Prohibido**: **bold**, *italic*, `code`, headings (##, ###), bullet lists, listas numeradas
 - Formato: `Qué se hizo. Estado actual. Próximo paso (si aplica).`
 - Si necesitas énfasis: usa mayúsculas o paréntesis, no markdown
 - Nunca mencionar archivos, rutas, hashes, IDs internos ni términos técnicos.
+- Si no cabe, **reescribir más corto** — nunca cortar (ver *Resumir, no cortar*). El detalle
+  completo va en `jira/<issue_key>.md`, que no tiene límite de largo.
 
 **Actualizar documento local `jira/<issue_key>.md`:**
 
@@ -339,6 +370,63 @@ Mostrar al usuario un resumen conciso en el chat — **no subir esto a Jira**:
 Tiempo registrado: Xh
 ```
 
+## Resumir, no cortar
+
+Los límites de largo son **presupuestos de escritura**, no una tijera al final. Un comentario
+que termina en `...` no informa nada y además avisa al lector que hay algo que no le dijiste:
+es peor que una línea corta y honesta.
+
+**Prohibido en cualquier texto que se sube a Jira:**
+
+| Prohibido | Por qué |
+|---|---|
+| `...`, `…`, `[...]`, `(cont.)`, `etc.` al final | señala texto faltante sin decir cuál |
+| una frase que termina sin punto, a mitad de idea | es un fragmento, no una oración |
+| palabra partida al medio | delata el corte mecánico |
+| pegar la lista de commits y confiar en el límite | el límite decide qué se pierde, no vos |
+
+**Cómo cabe el texto — el orden importa:**
+
+1. **Elegir la altitud antes de escribir.** Una oración por pregunta: qué se hizo, en qué estado
+   quedó, qué sigue. Escribí esas tres y ya cabés; no empieces por el detalle para después podarlo
+2. **Agrupar, no enumerar.** Seis commits de parsing son «corregido el parsing de telemetría V2»,
+   no seis frases recortadas a 300 caracteres
+3. **Borrar el detalle, no la cola.** Lo primero que sale son archivos, rutas, hashes, nombres de
+   función y números de versión internos — no la conclusión, que es lo único que el gerente lee
+4. **Contar antes de llamar la tool.** Si el texto excede el límite, **reescribirlo entero más
+   corto**, no truncarlo. Reescribir es una operación distinta a cortar
+5. **Lo que no cabe tiene otro lugar.** El detalle completo va en `jira/<issue_key>.md`. Jira lleva
+   la conclusión; el documento local lleva la evidencia. Nada se pierde por resumir
+
+**Ejemplo — el mismo trabajo, mal y bien:**
+
+```
+MAL (cortado a 300 chars, termina en puntos suspensivos):
+Se corrigió el parsing de la trama V2 en TelemetryParser.cpp, se ajustó el offset del campo
+de potencia, se agregaron 4 tests de host para los casos borde de CRC, se actualizó el
+decoder del backend en commands.rs para que el sentinel 0xFFFF ya no se clam...
+
+BIEN (resumido, 3 oraciones completas, 232 chars):
+Corregido el parsing de telemetría V2 y el decodificado de valores no medibles, que antes
+mostraban un equipo sin detector como saludable. Cubierto con tests automáticos. Estado: en
+revisión. Próximo paso: validar en el banco con equipo real.
+```
+
+Lo segundo es más corto **y** dice más: el defecto, la consecuencia para el negocio, y qué falta.
+
+**Verificación antes de subir cualquier texto a Jira** — un comentario, un worklog, un summary o
+una descripción:
+
+| # | Chequeo |
+|---|---|
+| 1 | ¿Termina en punto, cerrando una idea? |
+| 2 | ¿Aparece `...`, `…`, `[...]` o `etc.` en cualquier parte? → reescribir |
+| 3 | ¿Se entiende sin abrir el repo ni el documento local? |
+| 4 | ¿Está dentro del límite **después** de haberlo reescrito, no de haberlo cortado? |
+
+Si un texto falla cualquiera de los cuatro, se reescribe antes de llamar la tool. No se sube y
+se corrige después: el comentario de Jira es visible para gestión desde el primer segundo.
+
 ## Reglas universales
 
 - **Nunca inventar worklogs** — solo trabajo real confirmado por git o el usuario.
@@ -348,4 +436,7 @@ Tiempo registrado: Xh
 - **Zona horaria**: `America/Santiago` (`-0400`).
 - **Formato horas**: `Xh Ym`.
 - **Texto breve siempre**: descripciones ≤ 500 chars, comentarios ≤ 300 chars, worklogs ≤ 150 chars, summaries ≤ 80 chars
-- **Si tienes más texto que eso, resúmelo**. Nadie lee párrafos largos en Jira
+- **Ese límite se cumple resumiendo, nunca truncando** — ver *Resumir, no cortar*. Un texto con
+  `...` al final es un defecto, no un texto largo: se reescribe entero más corto
+- **El límite aplica a Jira, no al documento local** — `jira/<issue_key>.md` no tiene tope, y es
+  donde vive el detalle que no cabe en un comentario

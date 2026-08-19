@@ -4,6 +4,44 @@ Patterns and rules for embedded C/C++ development on microcontrollers (STM32, Co
 
 ---
 
+## Alcance: que cosa tiene que cumplir esto, y desde cuando
+
+### Un repo no es un firmware
+
+Censo del 19-Ago-2026: **7 repos, ~24 productos**. `fw-rutherford` tiene 7 apps sobre una capa
+`modules/`; `fw-gateway2lora` tiene 5 proyectos; `fw-vlad` tiene 4 (`vlad25_vhf`, `vlad_vhf`,
+`vlad_vhf_cpp`, `vlad_vhf_stg`); `fw-snifferTelemetry` 3; `fw-diagnostico-remoto-vlad` 3.
+
+**Estas reglas se predican de un producto, no de un repo.** «fw-gateway2lora cumple» no significa
+nada: son cinco binarios distintos, con builds distintos, y cuatro de ellos con tests propios.
+Cualquier afirmacion de cumplimiento nombra el producto —`fw-vlad/vlad25_vhf`— o no dice nada.
+
+Corolario para medir: un `grep -r` sobre la raiz del repo **suma productos que no comparten nada**.
+El promedio de cinco firmwares no describe a ninguno.
+
+### Alcance por era
+
+La fundacion se escribio el 21-Jul-2026 y crecio el 13-Ago. De los ~24 productos, **uno solo nacio
+despues**. Leer estas reglas como si aplicaran retroactivamente a 811 commits de 2021 es lo que
+hace que no se apliquen a ninguno.
+
+| Situacion del producto | Que se le exige |
+|---|---|
+| **Nuevo** (primer commit posterior a esta fundacion) | Todo. Sin excepciones, y son baratas al empezar |
+| **Vivo** (se le agregan funciones) | Lo nuevo cumple entero. Lo viejo se migra **solo si se toca** |
+| **En mantenimiento** (solo arreglos) | No romperlo. Los flags de warning SI, porque encuentran defectos sin reescribir nada |
+| **Congelado** | Nada. Y decirlo en su `CLAUDE.md`, para que no aparezca como incumplimiento en cada auditoria |
+
+**La excepcion se declara, no se hereda.** Un producto que no puede cumplir una regla lo escribe en
+su propio `CLAUDE.md` con el motivo —como `fw-vlad` hace con `-Og`—. Un incumplimiento sin declarar
+es indistinguible de un olvido, y se vuelve a "descubrir" en cada revision.
+
+**Evidencia de que el orden importa:** `fw-netreference`, el unico producto nacido despues de esta
+fundacion, es el unico con **cero heap**, con el set completo de warnings y con `-Werror` desde el
+primer commit. No costo una migracion: costo no tener que hacerla.
+
+---
+
 ## Code UX (Embedded Specific)
 
 ### Directrices viejas, mecanismos nuevos
@@ -68,7 +106,7 @@ sigue y que empeora el caso de falla se borra, no se reitera.
 | Unsigned Constants | Use `U` suffix: `100U`, `0x55U` |
 | Const Correctness | `const` for read-only: `const uint8_t *data` |
 | Volatile in ISRs | Variables shared with ISR MUST be `volatile` |
-| Atomic Access | Wrap multi-byte reads on Cortex-M0: `__disable_irq(); ... __enable_irq();` |
+| Atomic Access | **Sin scheduler:** `__disable_irq(); ... __enable_irq();` para lecturas multi-byte en Cortex-M0. **Con scheduler: `taskENTER_CRITICAL()`** — ver «Con scheduler y sin scheduler» |
 | Error Handling | Check EVERY HAL return: `if (status != HAL_OK)` |
 | No Magic Numbers | All constants via `#define` or `enum` |
 
@@ -341,6 +379,49 @@ hipotesis, que es lo valioso.
 **Cuidado con los falsos positivos:** un watchpoint sobre `SCB->AIRCR` para cazar un
 `NVIC_SystemReset()` dispara tambien en `HAL_NVIC_SetPriorityGrouping`, que escribe el mismo registro
 legitimamente. Leer el VALOR escrito, no solo el hecho de que se escribio.
+
+---
+
+## Con Scheduler y Sin Scheduler
+
+**1 de 7 repos usa RTOS**: `fw-vlad/vlad25_vhf` (5 tareas, 37 mutex, 28 `osDelay`, sin colas ni
+flags de evento). Los otros ~23 productos son super-loop. Los patrones de este documento —maquina
+de estados llamada en el lazo, timeout no bloqueante girando sobre `HAL_GetTick()`, «la ISR marca y
+el super-loop persiste»— **son de super-loop**. Con scheduler cambian tres cosas:
+
+| Sin scheduler | Con scheduler |
+|---|---|
+| `__disable_irq()` para acceso atomico | `taskENTER_CRITICAL()` — deshabilitar a mano pisa el anidamiento del kernel |
+| `while (!flag)` girando sobre `HAL_GetTick()` | bloquear en un semaforo o cola: girar le roba CPU a tareas de menor prioridad |
+| `self_test_run()` antes del super-loop | antes de arrancar el scheduler, no antes del lazo de una tarea |
+
+### El watchdog tiene que poder observar a todas las tareas
+
+En super-loop, si el lazo se traba el perro muerde. **Con scheduler eso deja de ser cierto:** la
+tarea que refresca puede estar perfectamente viva mientras otra se muere de hambre, y el watchdog
+sigue comiendo sobre un equipo medio muerto.
+
+Es la misma clase que «State With No Age» en `software-foundation.md`: una confirmacion que sigue
+siendo verdadera despues de dejar de significar algo.
+
+**Regla:** el refresco se hace donde se pueda comprobar que **cada** tarea critica avanzo —un
+contador por tarea que el refrescador lee y exige que haya cambiado—, no en la primera tarea que
+tenga un lazo a mano. Hoy `vlad25_vhf` refresca desde `health_monitor.cpp` sin esa comprobacion.
+
+### Los hooks del RTOS matan con marca, no loguean
+
+Un `vApplicationStackOverflowHook` que solo imprime deja correr un sistema con la pila pisada, y el
+log se pierde con el proximo reset. `vlad25_vhf` lo hace bien y por eso queda escrito aca: loguea el
+nombre de la tarea y llama `morir_con_marca(BOOT_MARK_STACK_OVF)`, asi la causa sobrevive al
+reinicio. Lo mismo `vApplicationMallocFailedHook`.
+
+### El heap del RTOS existe aunque la regla diga que no
+
+`vlad25_vhf` declara `configTOTAL_HEAP_SIZE 32768` y `configSUPPORT_DYNAMIC_ALLOCATION 1`. Que en la
+practica las tareas se creen estaticas (`stack_mem` / `cb_mem`) no borra los 32 KB reservados.
+
+**Regla:** si el producto prohibe heap, `configSUPPORT_DYNAMIC_ALLOCATION` va en **0** y el
+compilador lo hace cumplir. Dejarlo en 1 y confiar en la disciplina es una regla sin mecanismo.
 
 ---
 

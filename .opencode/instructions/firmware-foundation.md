@@ -6,20 +6,56 @@ Patterns and rules for embedded C/C++ development on microcontrollers (STM32, Co
 
 ## Code UX (Embedded Specific)
 
-### Checklist C++20
+### Directrices viejas, mecanismos nuevos
 
-| # | Rule | How to verify |
-|---|------|---------------|
-| 1 | `[[nodiscard]]` on EVERY function that returns a value | `grep -c nodiscard` vs `grep -c 'bool\|uint'` |
-| 2 | `std::span` instead of `T* + size` | `grep -rn '\bspan\b' Core/Inc/` |
-| 3 | `std::optional<T>` instead of `bool + T&` | `grep -rn 'optional' Core/Inc/` |
-| 4 | `static constexpr std::array` instead of C arrays | `grep -rn 'static const.*\[\]' Core/Inc/` |
-| 5 | `static_assert` per module — minimum 1 | `grep -c 'static_assert'` per file |
-| 6 | RAII guard for HW state | `grep -rn 'ScopeGuard' Core/` |
-| 7 | `constexpr` everything possible | Manual inspection |
-| 8 | `std::variant` dispatch instead of switch | `grep -rn 'std::variant' Core/` |
+La disciplina de MISRA y de la era pre-C++11 sigue siendo correcta. Lo que cambio es que hoy
+**casi toda esa disciplina se puede delegar al compilador** en vez de recordarla. Una regla que
+vive en una tabla es una promesa; la misma regla como tipo, atributo o flag es un mecanismo.
 
-**Golden rule:** If the compiler can't verify your invariant at compile-time, your design isn't expressive enough.
+Cada fila: la directriz vieja, el mecanismo que la hace cumplir, y **que vuelve imposible**.
+
+| Directriz vieja | Mecanismo C++20 | Vuelve imposible | Uso (19-Ago-2026) |
+|---|---|---|---|
+| Revisar TODO retorno de la HAL | `[[nodiscard]]` | ignorar un status en silencio | **112 archivos** |
+| `T* + size` en la firma | `std::span` | pasar el largo equivocado | **55** |
+| `bool` + parametro de salida | `std::optional<T>` | leer el valor cuando fallo | **31** |
+| Arrays C con tamano aparte | `static constexpr std::array` | perder el tamano | **36** |
+| No Magic Numbers | `enum class` + `constexpr` | comparar dos dominios distintos | **43 / 117** |
+| Invariantes en un comentario | `static_assert` | compilar con el invariante roto | **84** |
+| Contrato en la documentacion | `concept` | instanciar con un tipo que no lo cumple | **15** |
+| Guardar y restaurar estado de HW a mano | ScopeGuard RAII | salir por un `return` temprano sin restaurar | **10** |
+| Strict Typing (tabla MISRA) | `-Wconversion -Wsign-conversion` | truncar sin aviso | recien en `vlad25` |
+| Type punning por union o cast | **`std::bit_cast`** — `constexpr`, verifica tamano | reinterpretar tipos de tamano distinto | **0** — R4 ya se cumple con `memcpy`; `bit_cast` lo hace `constexpr` |
+| `volatile` + `__disable_irq()` a mano | **`std::atomic<T>`** + `static_assert(std::atomic<T>::is_always_lock_free)` | asumir atomicidad que el nucleo no da | **1** |
+| Tiempos como `uint32_t` de ms | **`std::chrono`** + literales (`100ms`) | sumar ms a segundos | **0** |
+| Mascaras y bucles de bits a mano | **`<bit>`**: `popcount`, `countl_zero`, `has_single_bit`, `bit_width` | contar bits mal en un caso borde | **0** — 24 `1 << n` a mano |
+
+**Golden rule:** si el compilador no puede verificar tu invariante en tiempo de compilacion, tu
+diseno no es lo bastante expresivo.
+
+**Lo que dice la ultima columna:** de 13 filas, **9 ya se aplican** y bien. Las 4 que faltan no son
+deuda de disciplina: son las que C++20 agrego *despues* de que se escribieran estas reglas. Es
+doctrina desactualizada, no incumplimiento.
+
+**Y una leccion de como se lee esta tabla.** La fila de `bit_cast` decia primero «0 usos, y 11
+`reinterpret_cast` en `Core/`», como si la regla se estuviera violando. Al leer los 11: **cuatro son
+comentarios que explican que NO se uso el cast, citando R4**, y los otros siete son
+`direccion -> puntero` para registros mapeados —`GPIO_TypeDef*`, `SPI_TypeDef*`, `DAC_TypeDef*`—,
+que es el unico modo de llegar a un periferico desde una direccion numerica y que **ningun
+mecanismo de C++20 reemplaza**. R4 se cumple al 100 %. Un conteo de `grep` respondio «cuantas
+lineas coinciden», no «existe el defecto», que es justo lo que esta fundacion advierte en
+`software-foundation.md -> Method Before Diagnosis`.
+
+**Un patron que ya existe y conviene nombrar:** esos accesos viven en plantillas parametrizadas por
+la direccion (`GpioPin.hpp`, `SpiBus.hpp`, `AgcDac.hpp`), con el `reinterpret_cast` aislado en un
+solo accessor `static`. Eso **es** el acceso a registros por templates de Kormanyos, ya construido:
+el cast peligroso queda en un lugar, verificable, y el resto del codigo habla de tipos. Cualquier
+periferico nuevo se escribe asi.
+
+`std::variant` **salio de este checklist**: estaba listado como reemplazo del `switch` y vive en
+1 archivo. Con `-fno-exceptions`, un `std::visit` sobre un variant sin valor llama a
+`std::terminate`, asi que la recomendacion era peor que lo que reemplazaba. Una regla que nadie
+sigue y que empeora el caso de falla se borra, no se reitera.
 
 ---
 
@@ -38,29 +74,68 @@ Patterns and rules for embedded C/C++ development on microcontrollers (STM32, Co
 
 ### Mandatory Toolchain Flags
 
+**Generacion de codigo** — todos los targets:
+
 ```
--Os                          # Optimize for size
--fdata-sections -ffunction-sections  # Strip dead code
--Wl,--gc-sections            # Link with dead code elimination
--Wdouble-promotion           # Detect float->double on M4F
--fno-exceptions -fno-rtti    # No C++ exceptions/RTTI
+-Os                                  # tamano (fw-vlad declara -Og como excepcion)
+-fdata-sections -ffunction-sections  # una seccion por simbolo
+-Wl,--gc-sections                    # el linker descarta lo no alcanzado
+-fno-exceptions -fno-rtti            # C++ sin excepciones ni RTTI
 ```
+
+**Warnings** — minimo obligatorio, y **solo sobre codigo propio**:
+
+```
+-Wall -Wextra -Wshadow
+-Wconversion -Wsign-conversion     # la forma EJECUTABLE de "Strict Typing"
+-Wdouble-promotion                 # float->double en M4F: emulacion silenciosa
+-Wcast-align                       # en Cortex-M el acceso desalineado es un fault
+-Wimplicit-fallthrough             # las maquinas de estado son switch
+-Wnon-virtual-dtor -Woverloaded-virtual   # solo C++
+```
+
+Recortado de [cppbestpractices](https://github.com/cpp-best-practices/cppbestpractices) cap. 2
+a lo que rinde en embebido.
+
+**«Solo sobre codigo propio» es la parte que decide si sirve.** La HAL del fabricante y el
+RTOS producen cientos de avisos que nadie va a arreglar, y aplicar los flags a todo el arbol
+equivale a no aplicarlos. Con reglas por directorio en el Makefile son dos variables.
+Medido en `fw-vlad/vlad25_vhf` (19-Ago-2026): **640 avisos** aplicandolos a todo el arbol,
+**60 propios** aplicandolos solo a `Core/`.
+
+`-Wold-style-cast` y `-Wuseless-cast` quedan **fuera**: 3156 avisos, de los cuales 2828 nacen
+en headers de la HAL incluidos desde nuestros `.cpp`. Reevaluar el dia que los includes de
+vendor pasen a `-isystem`.
+
+`-Werror` **cuando el repo llega a cero**, no antes. Un `-Werror` sobre 60 avisos
+preexistentes no se activa: se comenta, y entonces no hay flag ni regla.
+
+> **Una regla de tipos que no esta en un flag no es una regla.** "Strict Typing" vivio como
+> promesa en una tabla mientras el producto principal compilaba con `-Wall` a secas, sin
+> `-Wconversion` y sin el `-Wdouble-promotion` que esta misma seccion declaraba obligatorio
+> —en un M4F con FPU de simple precision, que es justo donde ese flag paga—.
 
 ---
 
 ## Memory Safety (ASan / UBSan / Valgrind)
 
+> **Alcance: los tests de host.** ASan, UBSan y Valgrind no corren en el microcontrolador. Esta
+> seccion gobierna el codigo compilado para host —los tests del Tier 2— donde SI hay heap y SI hay
+> sanitizers. En el target manda la regla de arriba: **static o stack, nada mas**. Sin esta
+> aclaracion, R3 se leia como permiso para usar `std::vector` en firmware y contradecia
+> «No Dynamic Allocation» treinta lineas antes.
+
 ### Mandatory Rules
 
-| Rule | Description |
-|------|-------------|
-| **R1** | Always compile with ASan in Debug: `-fsanitize=address,undefined -fno-omit-frame-pointer` |
-| **R2** | Zero tolerance to memory leaks: `definitely lost` blocks deploy |
-| **R3** | No raw `new`/`delete` — use `std::make_unique`, `std::vector`, RAII |
-| **R4** | No `reinterpret_cast` — use `std::memcpy` for type punning |
-| **R5** | Use `.at()` instead of `operator[]` in debug for bounds checking |
-| **R6** | Check division by zero before critical calculations |
-| **R7** | Verify `int` → `double` conversions don't overflow |
+| Rule | Description | Alcance |
+|------|-------------|---------|
+| **R1** | Always compile with ASan in Debug: `-fsanitize=address,undefined -fno-omit-frame-pointer` | host |
+| **R2** | Zero tolerance to memory leaks: `definitely lost` blocks deploy | host |
+| **R3** | No raw `new`/`delete` — use `std::make_unique`, `std::vector`, RAII | **host solamente** |
+| **R4** | No `reinterpret_cast`. En C++20, `std::bit_cast` para tipos del mismo tamano —es `constexpr` y el tamano lo verifica el compilador—; `std::memcpy` solo cuando difieren | ambos |
+| **R5** | Use `.at()` instead of `operator[]` in debug for bounds checking | ambos |
+| **R6** | Check division by zero before critical calculations | ambos |
+| **R7** | Verify `int` → `double` conversions don't overflow | ambos |
 
 ### Finding Classification
 
@@ -295,17 +370,17 @@ dejar rastro en el codigo ni en el `.ioc`.
 
 ## Provenance del Binario
 
-Un firmware desplegado tiene que poder **reconstruirse desde lo que el mismo reporta**.
+**Las tres reglas generales estan en `software-foundation.md` -> Build Provenance**, y valen para
+cualquier artefacto desplegado. No se repiten aca a proposito: estaban escritas dos veces, en dos
+idiomas, y dos copias de una regla derivan sin que nada lo reporte —el mismo defecto que esta
+fundacion le senala a `@mirror-of`—.
 
-| Regla | Por que |
-|---|---|
-| La version incluye el commit **y** un marcador de arbol sucio | un binario compilado sobre cambios sin commitear no sale de ningun commit |
-| La config del generador de codigo coincide con el codigo | regenerar desde el IDE puede cambiar el comportamiento en silencio |
-| Un `static_assert` protege los invariantes de tiempo | un equipo brickeado en terreno se vuelve un error de compilacion |
+Lo que agrega el firmware es **quien puede romperlas sin tocar codigo**: el generador del IDE.
 
 **Caso:** un `.ioc` declaraba un prescaler de watchdog distinto al del codigo. Regenerar
 bajaba el timeout de 24 s a 3 s, por debajo del retardo de arranque: ciclo de reset sin
-salida. No fallaba ese dia; fallaba la proxima vez que alguien abriera el `.ioc`.
+salida. No fallaba ese dia; fallaba **la proxima vez que alguien abriera el `.ioc`** — que es la
+forma en que un repo de firmware incumple la regla 2 sin un solo commit de codigo.
 
 ---
 

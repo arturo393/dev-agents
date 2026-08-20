@@ -8,7 +8,7 @@ Knowledge base for AI assistants. Not a code repo — no build, no tests, no CI.
 
 ```
 .opencode/instructions/   ← Load these as system instructions
-  software-foundation.md  ← Code Review, XDD, Fault Tolerance, Hardware Resilience
+  software-foundation.md  ← Code Review, XDD, Fault Tolerance, Hardware Resilience, tracker hygiene
   firmware-foundation.md  ← MISRA-C, C++20, Testing Tiers, Layered Architecture
 
 shared/brands/            ← Brand tokens (reference via opencode.json)
@@ -25,6 +25,11 @@ launch/                   ← Old project-specific workflows (ignore)
 - **No project-specific content** — each project owns its own `agents.md`
 - **Max ~150 lines** per file — patterns only, no theory
 - Brand guidelines are the exception to the "no project-specific" rule (they document specific brands)
+- **Before opening a tracker issue, enumerate the ones that already exist.** List every child of the
+  parent (`parent = <key>`, the whole set) and cross-reference the keys already in the git history;
+  report the work on the child that covers it, and create only what nothing covers. The principle is
+  in `software-foundation.md` → Method Before Diagnosis; the executable step is step 4 of the
+  `jira-report` agent, which must not create a subtask before that listing
 
 ## How Other Projects Reference This
 

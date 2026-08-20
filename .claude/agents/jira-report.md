@@ -202,7 +202,7 @@ Clasificar commits en bloques temáticos:
 ### 3. Clasificar trabajo contra subtareas y /jira
 
 Cruzar el trabajo de git contra:
-- Las subtareas existentes en Jira
+- Las subtareas existentes en Jira — **todas**, enumeradas con `parent = <issue_key>`, no las que uno recuerda
 - El documento `jira/<issue_key>.md` en el repo
 
 | Situación | Acción |
@@ -223,6 +223,32 @@ Cruzar el trabajo de git contra:
 - Si el trabajo es parte de una tarea existente → subtarea de esa tarea
 
 ### 4. Crear subtareas o tareas (si aplica)
+
+**Puerta obligatoria: enumerar antes de crear.** No se crea ninguna subtarea sin haber listado
+**todas** las que ya existen bajo el padre, y sin haber cruzado los keys que ya aparecen en git:
+
+```
+mcp__jira__jira_search_issues(jql="parent = <issue_key> ORDER BY key ASC", maxResults=100)
+```
+```bash
+git log --pretty='%s%n%b' | grep -oE '<PROJ>-[0-9]+' | sort | uniq -c | sort -rn
+```
+
+| Lo que encontrás | Acción |
+|---|---|
+| Subtarea abierta que cubre el tema | Comentar y worklog **ahí**, no en el padre ni en una nueva |
+| Subtarea abierta cuyo trabajo **ya está hecho** | Comentar con el commit que lo cierra y transicionarla — es un hallazgo, no un duplicado |
+| Subtarea que cubre **la mitad** del tema | Comentar lo hecho y decir explícitamente qué mitad falta |
+| Un key que nunca aparece en git | Está abierta de verdad: no es un residuo, no la cierres |
+| Nada la cubre | Recién ahí, crear |
+
+Si la respuesta de `mcp__jira__jira_search_issues` no cabe en el contexto, leer el archivo que deja la tool
+y extraer `key`, `status` y `summary` de cada una — el listado completo es el insumo, no una muestra.
+
+**Evidencia (20-Ago-2026):** se comentó el trabajo de una serie de seis días en el padre ID-1477 y se
+propusieron cuatro subtareas nuevas. El padre tenía **35 subtareas**, y cuatro de ellas eran el hogar
+exacto de ese trabajo — una, ID-1705, seguía en «Por hacer» con el trabajo commiteado días antes.
+Enumerarlas cuesta una consulta.
 
 **Subtarea** (trabajo complejo dentro de una tarea existente):
 ```

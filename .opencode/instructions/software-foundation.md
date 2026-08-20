@@ -187,6 +187,25 @@ debugging — both were already written in the same repository, with the same me
 audit `✅` meant *confidence level* («verified by reading the code»), not *fixed*. Ten criticals
 looked closed and were open.
 
+### Enumerate the tracker's existing tasks before opening a new one
+
+**Rule:** before creating an issue or a subtask, list **all** of the parent's existing children —
+`parent = <key>`, the whole set, not the ones you remember — and cross-reference the issue keys that
+already appear in the git history. Report the work where it already belongs; open something new only
+for what nothing covers.
+
+| What you find | Action |
+|---|---|
+| An open child that covers the topic | Comment and log the work **there**, not on the parent |
+| An open child whose work is **already done** | Close it, citing the commit — that is a finding, not a duplicate |
+| A child that covers **half** the topic | Comment what is done and state explicitly which half is missing |
+| Nothing covers it | Only then create |
+
+Evidence: a six-day firmware series was reported entirely on the parent task, with four new subtasks
+proposed. The parent already had **35** children — four were the exact home for that work, and one of
+them sat in "to do" while the file it asked to delete had been gone for days. Enumerating them cost
+one query.
+
 ### Never trust a `grep` count without looking at the matches
 
 **Rule:** a count only answers «how many lines match», not «does the defect exist». Read the

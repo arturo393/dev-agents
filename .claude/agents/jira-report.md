@@ -173,6 +173,24 @@ El usuario debe proveer:
 
 ### 0. Escanear /jira del repositorio
 
+**Si no te dieron un `issue_key`, el alcance lo define esta carpeta — nunca un JQL por proyecto.**
+Un `project = X` o un `statusCategory = indeterminate` devuelven el backlog de toda la
+organizacion: otros productos, otras personas, otros repos. Eso no es el trabajo del repo en el
+que estas.
+
+```bash
+ls <repo>/jira/ID-*.md          # cada archivo es una tarea activa de ESTE repo
+head -8 <repo>/jira/ID-*.md     # el frontmatter `epic:` nombra el proyecto
+```
+
+Sobre esas tareas y sus subtareas se opera. Si algo de afuera parece relevante, se nombra en la
+respuesta y se pregunta; no se le cambia el estado.
+
+**Evidencia (20-Ago-2026):** con el alcance sin definir se enumero `statusCategory = indeterminate`
+sobre el proyecto entero, salieron ~40 issues de tres productos ajenos, y se propuso "cerrar
+tareas" sobre un backlog que ese repo no conoce. El alcance correcto era un solo archivo de
+`jira/` y sus 35 subtareas.
+
 Detectar el repo actual por el path. Verificar que existe `jira/<issue_key>.md`:
 
 ```bash

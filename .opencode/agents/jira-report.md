@@ -157,12 +157,21 @@ para lo que existe ese nivel.
 trabajo. Sólo si ninguna lo contiene se justifica una Tarea nueva — y entonces su nombre tiene que
 poder leerlo alguien de gestión.
 
-> ⚠ **Jira NO convierte Tarea → Subtarea por API** en proyectos company-managed: devuelve
-> HTTP 400. Si el nivel se equivoca, la corrección es crear la subtarea bajo el padre correcto y
-> cancelar la Tarea suelta apuntando a la nueva. Por eso conviene acertar a la primera.
+> ⚠ **Si el nivel se equivoca.** Pasó el 19-Ago-2026 con ID-1850 e ID-1851, que nacieron como
+> Tareas sueltas y se recrearon como ID-1857 e ID-1858 bajo ID-1680. Dos cosas aprendidas después:
 >
-> Pasó el 19-Ago-2026 con ID-1850 e ID-1851, que nacieron como Tareas sueltas y hubo que
-> recrearlas como ID-1857 e ID-1858 bajo ID-1680.
+> 1. **Existe `jira_change_issue_type`, que acepta `newIssuetype: "Subtarea"` + `parentKey`.** La
+>    nota anterior afirmaba que Jira devuelve HTTP 400 en proyectos company-managed; puede ser
+>    cierto en esta instancia, pero **no se probó** — así que antes de recrear, intentá convertir.
+> 2. **La preferencia del usuario es BORRAR la Tarea equivocada, no cancelarla** (20-Ago-2026):
+>    una cancelada queda en los tableros y en los conteos como si fuera trabajo decidido. Pero
+>    **este MCP no tiene tool de borrado** —`jira_archive_issue_with_subtasks` solo transiciona a
+>    Cancelado—, así que el borrado lo hace una persona desde la UI. Decilo en la respuesta en vez
+>    de cancelar en silencio y dar el trabajo por cerrado.
+>
+> Y si queda cancelada: **ponele el puntero a su reemplazo**. Las dos de arriba quedaron con cero
+> comentarios y cero links durante un día, o sea trabajo de ruta crítica cancelado sin rastro de
+> dónde siguió. El puntero de la nueva a la vieja existía; el de la vieja a la nueva, no.
 
 ## Parámetros
 

@@ -162,10 +162,26 @@ poder leerlo alguien de gestión.
 >    nota anterior afirmaba que Jira devuelve HTTP 400 en proyectos company-managed; puede ser
 >    cierto en esta instancia, pero **no se probó** — así que antes de recrear, intentá convertir.
 > 2. **La preferencia del usuario es BORRAR la Tarea equivocada, no cancelarla** (20-Ago-2026):
->    una cancelada queda en los tableros y en los conteos como si fuera trabajo decidido. Pero
->    **este MCP no tiene tool de borrado** —`jira_archive_issue_with_subtasks` solo transiciona a
->    Cancelado—, así que el borrado lo hace una persona desde la UI. Decilo en la respuesta en vez
->    de cancelar en silencio y dar el trabajo por cerrado.
+>    una cancelada queda en los tableros y en los conteos como si fuera trabajo decidido.
+>    **`jira_delete_issue` existe** —`DELETE /rest/api/3/issue/{key}?deleteSubtasks=true`, con
+>    `deleteSubtasks` en true por defecto—. Es **irreversible** y pide permiso de administrador.
+>
+>    Antes de borrar, tres comprobaciones, porque después no hay vuelta atrás:
+>    **cero worklogs** (hay horas registradas que se pierden), **cero subtareas** que no quieras
+>    llevarte, y que el contenido esté **vivo en el reemplazo** —descripción, decisiones, labels de
+>    fuente—. Con eso, borrar es la opción limpia.
+>
+>    **Cuándo NO borrar:** si el issue ya circuló —links entrantes, menciones en correos, hashes de
+>    commits, capturas en un informe—, borrarlo deja 404 y ningún rastro de dónde siguió el trabajo.
+>    Ahí conviene mover o convertir, y borrar solo lo que nunca tuvo tráfico. El orden que conserva
+>    las dos cosas es: primero mover/convertir, borrar al final y solo si sobra.
+>
+> ⚠ **Una tool agregada al MCP no aparece hasta reconectar.** El registro se arma al conectar el
+> servidor, así que buscarla y no encontrarla prueba que **esta sesión no la ve**, no que no exista.
+> Pasó el 20-Ago-2026: se afirmó «el MCP no tiene tool de borrado» y estaba agregada ese mismo día,
+> una hora antes. Antes de declarar que algo no se puede: `grep` en las definiciones del servidor
+> —para este MCP, `sw-jiraanalysis/jira-mcp-server/lib/tools-definitions/`— y si está ahí, o se
+> reconecta el MCP o se llama a la API con las credenciales de `jira/.env.jira`.
 >
 > Y si queda cancelada: **ponele el puntero a su reemplazo**. Las dos de arriba quedaron con cero
 > comentarios y cero links durante un día, o sea trabajo de ruta crítica cancelado sin rastro de

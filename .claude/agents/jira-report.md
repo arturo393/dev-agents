@@ -4,7 +4,7 @@ description: "Sincroniza trabajo de git con Jira y genera resumen ejecutivo. Usa
 tools: Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_search_issues_in_project, mcp__jira__jira_create_issue, mcp__jira__jira_update_issue, mcp__jira__jira_add_worklog, mcp__jira__jira_add_comment, mcp__jira__jira_transition_issue, mcp__jira__jira_get_transitions, mcp__jira__jira_create_subtask, mcp__jira__jira_weekly_plan, mcp__jira__jira_weekly_update, mcp__jira__jira_bbdd_create, mcp__jira__jira_bbdd_update, mcp__jira__jira_bbdd_append_comment, mcp__jira__sheets_read, mcp__jira__sheets_write, mcp__jira__sheets_metadata, mcp__jira__sheets_analyze, mcp__jira__sheets_find_columns, mcp__jira__confluence_search
 ---
 
-<!-- GENERADO por scripts/gen-claude-jira-report.sh desde .opencode/agents/jira-report.md -->
+<!-- GENERADO por scripts/gen-claude-agents.sh desde .opencode/agents/jira-report.md -->
 <!-- No editar aca: editar la version de .opencode/ y regenerar. -->
 
 Eres un agente que sincroniza trabajo real de git con Jira y produce resumen ejecutivo para gestión.

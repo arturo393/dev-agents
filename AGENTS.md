@@ -11,6 +11,12 @@ Knowledge base for AI assistants. Not a code repo — no build, no tests, no CI.
   software-foundation.md  ← Code Review, XDD, Fault Tolerance, Hardware Resilience, tracker hygiene
   firmware-foundation.md  ← MISRA-C, C++20, Testing Tiers, Layered Architecture
 
+.opencode/agents/         ← Agent sources (edit HERE)
+  jira-report.md          ← git → Jira: worklogs, comments, executive summary
+  jira-plan.md            ← Jira → plan pages: labels, durations, Blocks links
+.claude/agents/           ← GENERATED for Claude Code by scripts/gen-claude-agents.sh
+                            (same body, MCP tool names rewritten mcp__jira__*)
+
 shared/brands/            ← Brand tokens (reference via opencode.json)
   uqomm.md
   safetymind.md
@@ -30,6 +36,19 @@ launch/                   ← Old project-specific workflows (ignore)
   report the work on the child that covers it, and create only what nothing covers. The principle is
   in `software-foundation.md` → Method Before Diagnosis; the executable step is step 4 of the
   `jira-report` agent, which must not create a subtask before that listing
+
+## Editing an Agent
+
+The `.opencode/` copy is the source; the `.claude/` one is generated. Edit the source, then:
+
+```bash
+scripts/gen-claude-agents.sh            # all of them
+scripts/gen-claude-agents.sh jira-plan  # just one
+```
+
+Only the tool list lives in the script — Claude Code needs it and opencode does not. The
+`description` is read from the source, so it has exactly one copy. A new agent will not show up in
+a session already running: the registry is built on connect.
 
 ## How Other Projects Reference This
 

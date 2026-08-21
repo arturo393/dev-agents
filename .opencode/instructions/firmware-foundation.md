@@ -406,7 +406,19 @@ siendo verdadera despues de dejar de significar algo.
 
 **Regla:** el refresco se hace donde se pueda comprobar que **cada** tarea critica avanzo —un
 contador por tarea que el refrescador lee y exige que haya cambiado—, no en la primera tarea que
-tenga un lazo a mano. Hoy `vlad25_vhf` refresca desde `health_monitor.cpp` sin esa comprobacion.
+tenga un lazo a mano.
+
+**`vlad25_vhf` ya lo hace, y esta linea decia lo contrario hasta el 21-Ago-2026.** Verificado en el
+codigo: `health_monitor_pet_watchdog()` llama a `health_monitor_all_healthy()`, que compara el ultimo
+latido de cada una de las cinco tareas contra su plazo —el de BLE es distinto, a proposito— y con
+`HEALTH_ENFORCE = true` **solo refresca el IWDG si ninguna llego tarde**. La unica excepcion es un
+FOTA en curso, que inhibe el reinicio para no dejar firmware a medias.
+
+Le queda un hueco, y conviene nombrarlo porque es la version fina de esta misma regla: una tarea que
+**nunca** latio se saltea (`g_task_health_mask`), asi que el watchdog ve morir a una tarea pero no ve
+a una que no arranco. Es deliberado —permite que el equipo funcione sin el modulo BLE— y aplica a
+las cinco por igual. Cerrarlo pide `eTaskGetState()` sobre el handle, y eso se toca con banco
+delante: es el camino que refresca el perro.
 
 ### Los hooks del RTOS matan con marca, no loguean
 

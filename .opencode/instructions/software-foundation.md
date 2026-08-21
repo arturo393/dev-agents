@@ -211,6 +211,29 @@ one query.
 **Rule:** a count only answers «how many lines match», not «does the defect exist». Read the
 matches. Comments describing a bug match the same pattern as the bug.
 
+### Every instrument has a blind spot, and it cannot see its own
+
+An *instrument* is the mechanical way you ask the codebase a question — a grep, a script, the
+linker's discard list — that enumerates candidates **by a property** instead of by intuition.
+Auditing is choosing instruments, not reading harder.
+
+The trap: a check that returns zero can mean «no defects» or «cannot see them», and both read the
+same. Three cases from one ten-round audit, all three the auditor's fault and not the repo's:
+
+| The check | Returned | What it could not see |
+|---|---|---|
+| `file:line` refs validated against the file's **length** | «21, 0 invalid» | 5 pointed at the wrong line *inside* the file |
+| paths in backticks across the docs | clean | the only broken link used `[](...)` syntax |
+| existence of every cited file | 30 «invalid» | they lived in the sibling legacy repo |
+
+**Rule:** before believing a zero, ask whether the check *can* fail — then make it fail once. And
+yield comes from a **new property to enumerate by**, not from re-running the same instrument: in
+that audit all ten rounds found something and no two rounds found the same class, because each
+changed instrument. «Audit until nothing is left» does not converge by exhaustion; it ends when you
+run out of ways to ask. Say that instead of declaring convergence.
+
+Catalogue of instruments, what each finds and what each misses: skill `audit-loop`.
+
 ### Say «verified» only for what was executed
 
 **Rule:** separate what was *measured* from what was *inferred*. When a conclusion depends on an

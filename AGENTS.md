@@ -28,7 +28,11 @@ launch/                   ← Old project-specific workflows (ignore)
 ## Conventions
 
 - **English only** in all instruction files
-- **No project-specific content** — each project owns its own `agents.md`
+- **No project-specific content** — each project owns its own `agents.md`. **This applies to
+  `.opencode/instructions/` only.** `skills/` *is* allowed to be product- or instrument-specific,
+  and in practice all of it is (`openocd-vlad`, `siglent-scope`, `safetymind-jira`, `drift-radar`):
+  a skill carries a procedure and the traps that procedure hit, which is inherently about one
+  thing. `~/.claude/skills` is a symlink here, so Claude Code and opencode read one copy
 - **Max ~150 lines** per file — patterns only, no theory
 - Brand guidelines are the exception to the "no project-specific" rule (they document specific brands)
 - **Before opening a tracker issue, enumerate the ones that already exist.** List every child of the

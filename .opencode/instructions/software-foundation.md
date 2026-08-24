@@ -206,10 +206,8 @@ proposed. The parent already had **35** children — four were the exact home fo
 them sat in "to do" while the file it asked to delete had been gone for days. Enumerating them cost
 one query.
 
-### Never trust a `grep` count without looking at the matches
-
-**Rule:** a count only answers «how many lines match», not «does the defect exist». Read the
-matches. Comments describing a bug match the same pattern as the bug.
+**Rule:** a `grep` count answers «how many lines match», not «does the defect exist» — see skill
+`audit-loop` for the full treatment. Read the matches before calling anything a defect.
 
 ### Every instrument has a blind spot, and it cannot see its own
 
@@ -420,14 +418,6 @@ Methods organized by usage order, not by type:
 
 ## Documentation Principles
 
-| Pattern | Rule |
-|---------|------|
-| Lead with answer | Decision or action first, context after |
-| Progressive disclosure | Happy path → details → edge cases |
-| Chunking | Small sections, short lists |
-| Signposting | Headings, labels, callouts |
-| Recognition over recall | Tables, checklists, templates |
-
 ### A decision written as a pending item invites its own reversal
 
 "Not configurable **yet**", "still pending" and "TODO" describe a gap. If what is really there is a
@@ -440,45 +430,13 @@ the signal that the decision changed."
 Evidence: a comment saying a family's alert config "does not exist yet" was written by the same
 person who had just decided it never would.
 
-### Rules
-- Every document answers a real question
-- No generic READMEs
-- Don't document for documentation's sake
-- ADR only for decisions with >30 min discussion
-
 ---
 
 ## Resilience & Fault Tolerance
 
-### 1. Circuit Breaker
-Service fails repeatedly → open circuit → friendly fallback → automatic recovery.
-
-**Example:** Payments fail → "Payment unavailable, try later" → service recovers in background.
-
-### 2. Bulkhead (Failure Isolation)
-Each critical module runs isolated in its own "compartment".
-
-**Example:** If reports fail, authentication and sales keep working.
-
-### 3. Observability
-- **Structured logs** (JSON): request traceability across services
-- **Metrics**: latency, error rate, memory usage
-- **Alerts**: notify when error rate > 0.1%
-
-### 4. Eventual Consistency
-Accept that data between services may be temporarily misaligned.
-
-**Example:** User updates profile → other services see it 2-5 seconds later.
-
-### 5. Saga Pattern (Compensating Transactions)
-Multi-step operation fails → automatic compensating action.
-
-**Example:** Charge successful + reservation failed → emit automatic refund.
-
-### 6. Feature Flags
-Deploy features "off" behind a switch.
-
-**Benefit:** Serious bug → turn off flag without full redeploy.
+Circuit Breaker, Bulkhead, Observability, Eventual Consistency, Saga and Feature Flags are standard
+patterns — apply them per `Security by Context` (§above) and don't re-derive them here. The two that
+are *not* obvious and belong in this foundation:
 
 ### 7. Chaos Engineering
 Inject controlled failures in production to verify resilience.
@@ -548,12 +506,6 @@ not the columns, which are the part that *must* differ.
 
 **Rule:** compare what the files *say*, not how they look. Diff the data they render before
 concluding one of them is redundant.
-
-### Anti-patterns
-
-- ❌ "I'll leave it just in case" — Dead code isn't safe, it's noise
-- ❌ "I deleted the file but not from the build" — Worse, now you get link errors
-- ❌ "It's commented but I'll need it later" — That's what git is for
 
 ---
 

@@ -169,6 +169,12 @@ preexistentes no se activa: se comenta, y entonces no hay flag ni regla.
 |------|-------------|---------|
 | **R1** | Always compile with ASan in Debug: `-fsanitize=address,undefined -fno-omit-frame-pointer` | host |
 | **R2** | Zero tolerance to memory leaks: `definitely lost` blocks deploy | host |
+
+**Ergodicidad (tiempo secuencial ≠ paralelo):** pasar 10.000 pruebas en paralelo durante 5 min
+con 0 fugas no prueba nada sobre 5 años en un solo dispositivo. Una fuga de 1 byte/hora es
+ruina matemática en trayectoria secuencial aunque el promedio del ensemble sea 100 % verde.
+Los tests del Tier 2 miden el *ensemble*; el firmware vive la *trayectoria*. Diseñar y revisar
+optimizando para la ejecución infinita en un solo equipo, no para el promedio de la batería.
 | **R3** | No raw `new`/`delete` — use `std::make_unique`, `std::vector`, RAII | **host solamente** |
 | **R4** | No `reinterpret_cast`. En C++20, `std::bit_cast` para tipos del mismo tamano —es `constexpr` y el tamano lo verifica el compilador—; `std::memcpy` solo cuando difieren | ambos |
 | **R5** | Use `.at()` instead of `operator[]` in debug for bounds checking | ambos |

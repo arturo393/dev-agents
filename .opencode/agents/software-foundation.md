@@ -83,7 +83,7 @@ look: three dashboards that looked identical had 8, 15 and 8 disjoint columns.
 
 - Read `docs/`, `CHANGELOG` and prior audits **before** deriving a finding
 - Verify what a mark means in an audit table — `✅` may mean *confidence*, not *fixed*
-- Never trust a `grep` count without reading the matches: comments describing a bug match it
+- A `grep` count is not a finding (see skill `audit-loop`); read the matches before judging
 - Say «verified» only for what was executed; state inferred conclusions as conditional
 
 ### Negative Control

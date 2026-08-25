@@ -1,7 +1,7 @@
 ---
 name: jira-report
 description: "Sincroniza trabajo de git con Jira y genera resumen ejecutivo. Usar cuando el usuario pida: resumen jira, sync jira, actualiza issue, worklog, briefing, update ejecutivo, estado del proyecto, qué hicimos, cierre de semana."
-tools: Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_search_issues_in_project, mcp__jira__jira_create_issue, mcp__jira__jira_update_issue, mcp__jira__jira_add_worklog, mcp__jira__jira_add_comment, mcp__jira__jira_transition_issue, mcp__jira__jira_get_transitions, mcp__jira__jira_create_subtask, mcp__jira__jira_weekly_plan, mcp__jira__jira_weekly_update, mcp__jira__jira_bbdd_create, mcp__jira__jira_bbdd_update, mcp__jira__jira_bbdd_append_comment, mcp__jira__sheets_read, mcp__jira__sheets_write, mcp__jira__sheets_metadata, mcp__jira__sheets_analyze, mcp__jira__sheets_find_columns, mcp__jira__confluence_search
+tools: Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_search_issues_in_project, mcp__jira__jira_create_issue, mcp__jira__jira_update_issue, mcp__jira__jira_add_worklog, mcp__jira__jira_add_comment, mcp__jira__jira_transition_issue, mcp__jira__jira_get_transitions, mcp__jira__jira_create_subtask, mcp__jira__jira_link_issues, mcp__jira__jira_weekly_plan, mcp__jira__jira_weekly_update, mcp__jira__jira_bbdd_create, mcp__jira__jira_bbdd_update, mcp__jira__jira_bbdd_append_comment, mcp__jira__sheets_read, mcp__jira__sheets_write, mcp__jira__sheets_metadata, mcp__jira__sheets_analyze, mcp__jira__sheets_find_columns, mcp__jira__confluence_search
 ---
 
 <!-- GENERADO por scripts/gen-claude-agents.sh desde .opencode/agents/jira-report.md -->
@@ -46,6 +46,12 @@ Este agente se apoya en el MCP server ubicado en `/home/arturo/uqomm/sw-jiraanal
 | `mcp__jira__jira_transition_issue` | Cambiar estado |
 | `mcp__jira__jira_get_transitions` | Ver transiciones disponibles |
 | `mcp__jira__jira_archive_issue_with_subtasks` | Archivar issue + subtareas |
+| `mcp__jira__jira_delete_issue` | Borrar issue (con `deleteSubtasks`) — lo que **no** se puede archivar |
+| `mcp__jira__jira_create_subtask` | Crear subtarea bajo un padre. Es el camino normal: ver *Jerarquía* |
+| `mcp__jira__jira_set_parent` | Reasignar el padre de una subtarea |
+| `mcp__jira__jira_link_issues` | Vinculo **Blocks** entre dos issues. Parametros `bloquea` / `bloqueado`, por el ROL — la API los llama `inward`/`outward`, que no dicen quien depende de quien, y un vinculo invertido es un vinculo valido. La tool lo lee de vuelta y ata su `success` a encontrarlo |
+| `mcp__jira__jira_bulk_assign` | Asignar en lote |
+| `mcp__jira__jira_bulk_move` | Mover en lote (conserva el padre desde `da21d35`; antes lo descartaba y reportaba exito) |
 | `mcp__jira__jira_change_issue_type` | Cambiar tipo de issue |
 | `mcp__jira__jira_move_epic_to_project` | Mover épica a otro proyecto |
 | `mcp__jira__jira_copy_epic_to_project` | Copiar épica a otro proyecto |

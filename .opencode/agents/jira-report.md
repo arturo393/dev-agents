@@ -48,6 +48,12 @@ Este agente se apoya en el MCP server ubicado en `/home/arturo/uqomm/sw-jiraanal
 | `jira_jira_transition_issue` | Cambiar estado |
 | `jira_jira_get_transitions` | Ver transiciones disponibles |
 | `jira_jira_archive_issue_with_subtasks` | Archivar issue + subtareas |
+| `jira_jira_delete_issue` | Borrar issue (con `deleteSubtasks`) — lo que **no** se puede archivar |
+| `jira_jira_create_subtask` | Crear subtarea bajo un padre. Es el camino normal: ver *Jerarquía* |
+| `jira_jira_set_parent` | Reasignar el padre de una subtarea |
+| `jira_jira_link_issues` | Vinculo **Blocks** entre dos issues. Parametros `bloquea` / `bloqueado`, por el ROL — la API los llama `inward`/`outward`, que no dicen quien depende de quien, y un vinculo invertido es un vinculo valido. La tool lo lee de vuelta y ata su `success` a encontrarlo |
+| `jira_jira_bulk_assign` | Asignar en lote |
+| `jira_jira_bulk_move` | Mover en lote (conserva el padre desde `da21d35`; antes lo descartaba y reportaba exito) |
 | `jira_jira_change_issue_type` | Cambiar tipo de issue |
 | `jira_jira_move_epic_to_project` | Mover épica a otro proyecto |
 | `jira_jira_copy_epic_to_project` | Copiar épica a otro proyecto |

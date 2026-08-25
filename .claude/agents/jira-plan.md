@@ -1,7 +1,7 @@
 ---
 name: jira-plan
 description: "Deja Jira listo para que las paginas de plan se dibujen solas: nodos del plan, duraciones, dependencias Blocks, etiquetas de bloque y fase, trabas. Usar cuando el usuario pida: cargar el plan en jira, poner duraciones, vincular dependencias, etiquetar bloques, agregar un proyecto a la cadena, la pagina no muestra tal hito, ruta critica."
-tools: Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_update_issue, mcp__jira__jira_add_comment, mcp__jira__jira_create_issue, mcp__jira__jira_create_subtask, mcp__jira__jira_get_transitions, mcp__jira__jira_transition_issue
+tools: Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_update_issue, mcp__jira__jira_add_comment, mcp__jira__jira_create_issue, mcp__jira__jira_create_subtask, mcp__jira__jira_get_transitions, mcp__jira__jira_transition_issue, mcp__jira__jira_link_issues
 ---
 
 <!-- GENERADO por scripts/gen-claude-agents.sh desde .opencode/agents/jira-plan.md -->
@@ -91,20 +91,25 @@ Dias habiles, en el campo Duracion. Un nodo `hecho` vale 0 aunque tenga duracion
 
 ### 3. Dependencias — la direccion se verifica, no se supone
 
-El MCP **no tiene** tool de vinculos (`jira_link_to_epic` es otra cosa: no la uses). Van por REST.
+Usar **`mcp__jira__jira_link_issues`** del MCP (`jira_link_to_epic` es otra cosa: no la uses). Sus dos
+parametros se llaman por el **rol**, no por la direccion del vinculo:
 
-La forma canonica que guarda Jira, comprobada leyendo `/rest/api/3/issueLink/{id}` de un vinculo
-correcto: **`inwardIssue` es el predecesor** —el que bloquea— y `outwardIssue` el que depende.
-
-```bash
-# "A bloquea a B", o sea A es predecesor de B
-curl -sS -u "$JIRA_EMAIL:$JIRA_API_TOKEN" -X POST "$JIRA_URL/rest/api/3/issueLink" \
-  -H 'Content-Type: application/json' \
-  -d '{"type":{"name":"Blocks"},"inwardIssue":{"key":"A"},"outwardIssue":{"key":"B"}}'
+```
+mcp__jira__jira_link_issues(bloquea="A", bloqueado="B")     # A es predecesor de B
 ```
 
-**Cargar UNO y leerlo de vuelta antes de cargar el resto.** Desde el issue dependiente, el
-predecesor tiene que salir como `inwardIssue` con `inward = "is blocked by"`.
+Ese nombrado es deliberado y es la mitad del arreglo. La API de Jira los llama `inwardIssue` y
+`outwardIssue` —**`inwardIssue` es el predecesor**, el que bloquea, comprobado leyendo
+`/rest/api/3/issueLink/{id}` de un vinculo correcto— y esos dos nombres no dicen quien depende de
+quien, asi que invertirlos produce un vinculo perfectamente valido y al revés. La tool tambien **lee
+el vinculo de vuelta** desde el issue dependiente y ata su `success` a encontrarlo, en vez de a que
+el POST devolviera 201.
+
+Aun asi, **cargar UNO y comprobarlo antes de cargar el resto**: la lectura de vuelta confirma que el
+par quedo como la tool lo pidio, no que sea el par que vos querias.
+
+> Antes de que existiera la tool esto iba por `curl` al endpoint `/rest/api/3/issueLink`, y sigue
+> siendo la salida si el MCP no esta disponible — con la trampa de los nombres a la vista.
 
 > **Evidencia (20-Ago-2026):** se cargaron 17 vinculos invertidos. La comprobacion fue contar
 > —«17 de 17 creados»— y dio verde con **todos** los pares al revés. Hubo que borrarlos y

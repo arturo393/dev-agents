@@ -416,6 +416,38 @@ Methods organized by usage order, not by type:
 
 ---
 
+## Un diagrama cuando el hallazgo tiene forma
+
+Un hallazgo que involucra **más de dos saltos**, o **dos extremos que tienen que coincidir**, se
+explica mal en prosa: el lector tiene que reconstruir la topología en la cabeza antes de poder
+juzgar la conclusión. Va con un diagrama de texto simple.
+
+**Cuándo sí:** una cadena (equipo → radio → puente → servidor → base → pantalla), un contrato entre
+dos puntas (quién escribe qué registro en cada lado), una tabla de estados con transiciones, un
+lazo cerrado (mide → decide → actúa).
+
+**Cuándo no:** una respuesta de un dato («el bit está en 1»), un valor medido, un sí o un no.
+«Siempre un diagrama» degenera en dibujar cajas para contestar preguntas de una línea.
+
+**Qué tiene que mostrar**, y esto es lo que lo hace útil en vez de decorativo:
+
+| Elemento | Por qué |
+|---|---|
+| Los bloques con su nombre real —archivo, host, opcode— | un diagrama con nombres inventados no se puede verificar |
+| Las flechas con **qué** viaja y por dónde | «→» sin etiqueta no dice si es LoRa, SPI o HTTP |
+| **Dónde se rompió**, marcado | es la razón de dibujarlo: el lector ve el salto que falla sin contar párrafos |
+| Lo que **existe** frente a lo que **falta** | en un análisis de brechas es la información entera |
+
+Marcas: `✓` existe y funciona · `✗` falta o falla · `?` sin verificar. Un `?` es información: dice
+dónde está el límite de lo medido.
+
+**Evidencia de que hace falta:** un diagnóstico de siete defectos encadenados —radio en reset, un
+registro sin escribir, un contador que confundía dos causas, dos roles cruzados, un lector ausente,
+un descarte mudo y una recepción en la frecuencia propia— se explicó tres veces en prosa y el
+interlocutor volvió a preguntar «¿cuál es el problema en simple?». La cadena dibujada en seis líneas
+lo contestó de una.
+
+
 ## Documentation Principles
 
 ### A decision written as a pending item invites its own reversal

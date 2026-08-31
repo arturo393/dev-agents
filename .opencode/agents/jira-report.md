@@ -101,7 +101,23 @@ Este agente se apoya en el MCP server ubicado en `/home/arturo/uqomm/sw-jiraanal
 - `duedate` / `fecha_compromiso` — fecha de vencimiento
 - `startdate` / `fecha_inicio` — fecha de inicio
 - `estimate` / `estimacion` / `time estimate` — estimación (formato: `30m`, `2h`, `1d`, `1h 30m`)
-- `labels` — JSON array `["tag-1", "tag-2"]` o string separado por `,`/`;`
+- `labels` — JSON array `["tag-1", "tag-2"]` o string separado por `,`/`;`. Las dos formas
+  funcionan desde el 31-Ago-2026: antes el array JSON llegaba como **texto** y se partía por
+  comas, dejando los corchetes y las comillas **dentro** de las etiquetas. La tool devolvía
+  `success: true` y el issue quedaba con basura, porque Jira acepta un corchete en una
+  etiqueta. Ahora una etiqueta con espacio o comilla **falla en voz alta** en vez de guardarse
+- `labels` con `+` o `-` adelante **agrega o quita sin pisar lo ajeno**: `+bloqueo`,
+  `+nueva,-vieja`. Sin prefijos sigue **reemplazando el set completo**, y ahí está el peligro:
+  con varias sesiones sobre la misma cuenta de Jira, quien escriba el set que leyó hace rato
+  borra lo que otro puso en el medio. Pasó el 31-Ago-2026 en ID-1950 — a las 08:32 se le puso
+  `bloqueo` y el flag de impedimento, y a las 10:48 otra sesión escribió su set viejo y las dos
+  cosas desaparecieron sin que ningún `success` lo dijera. **Para tocar una etiqueta usá `+`/`-`;
+  reservá el reemplazo para cuando de verdad querés fijar el set entero.** Mezclar las dos formas
+  en una llamada falla a propósito
+- `duracion` / `duración` / `dias habiles` — duración en días hábiles para las páginas de plan
+  (`customfield_10333`, numérico). Va con alias porque el nombre del campo en Jira trae un `»`
+  pegado al final y su id no se puede adivinar. **Cualquier campo numérico** pasado como
+  `customfield_NNNNN` también se convierte: el tipo se consulta a Jira, no se supone
 - `assignee`, `summary`, `priority`
 - `epic` / `epic link` / `épica` — asigna issue a una épica (value: clave de la épica, ej: `ID-1646`)
 - `description` / `descripción` — actualiza descripción del issue (texto plano, se convierte a ADF)
@@ -527,6 +543,21 @@ se corrige después: el comentario de Jira es visible para gestión desde el pri
 
 - **Nunca inventar worklogs** — solo trabajo real confirmado por git o el usuario.
 - **Leer antes de escribir** — siempre GET el issue antes de modificar.
+- **Y LEER DESPUÉS DE ESCRIBIR.** El `success: true` de la tool significa que Jira aceptó el
+  pedido, **no** que el campo quedó con lo que mandaste. El 31-Ago-2026 falló de tres formas
+  distintas en un día, las tres con `success: true` y ninguna detectable desde el resultado de la
+  llamada: las etiquetas quedaron con los corchetes del JSON adentro; un número mandado como texto
+  se descartó entero; y un set completo de etiquetas borró lo que otra sesión había puesto en el
+  medio. **Después de cualquier escritura que importe, leé el campo y comparalo.** Las tres se
+  encontraron así y ninguna de otra manera
+- **Para tocar UNA etiqueta usá `+`/`-`, no el set completo** — `+bloqueo` lo aplica Jira del lado
+  del servidor y no pisa lo que puso otro. El reemplazo se reserva para cuando fijar el set entero
+  es la intención de verdad. Con varias sesiones sobre la misma cuenta, reemplazar un set que
+  leíste hace rato **no es un riesgo, es una pérdida garantizada**
+- **Varias sesiones comparten la cuenta de Jira** — el historial atribuye todo al mismo nombre, así
+  que por autor no se distinguen. Cuando algo se deshizo solo, la pista es la **hora**: `GET
+  /rest/api/3/issue/<key>/changelog` dice qué cambió y cuándo, y contra eso se compara lo que
+  estabas haciendo vos
 - **Un worklog por bloque temático** — ni excesivo ni vago.
 - **Idioma**: español por defecto.
 - **Zona horaria**: `America/Santiago` (`-0400`).

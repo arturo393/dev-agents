@@ -141,6 +141,9 @@ found seven times in one week, across firmware, a server, a CLI tool and a build
 | Test asserting a crash | the code is protected | it certified the bug |
 | Fixture with a hardcoded date | the device is `healthy` | it asserted health for 157 days of silence |
 | Schema test over hand-written examples | producer and contract agree | the examples used the types the schema already knew |
+| An API client's own `success: true` | the field holds the value you sent | it held the value **with the transport's syntax inside it** |
+| The same `success: true` | the field was written | the field type rejected it and the whole write was discarded |
+| A write that replaces a whole set | your item is in the set | it silently dropped what another writer had added |
 
 ### How to detect it
 
@@ -153,6 +156,30 @@ found seven times in one week, across firmware, a server, a CLI tool and a build
 | Can the reported provenance regenerate the artifact? | build metadata taken from HEAD, ignoring a dirty tree |
 | Does the fixture age? | a fixed date in a test about freshness stops being valid the day after it was written |
 | Does the conformance test read the **producer**, or an example? | an example written next to the schema can only confirm the schema agrees with itself |
+| Who wrote the confirmation — the writer, or the store? | the `success` of the very call that wrote it: the client reporting on itself |
+| Does this write **replace** a collection you did not fully read? | any set-valued field —labels, tags, members— under more than one writer |
+
+### After writing to a remote store, read it back — the client's `success` is not evidence
+
+`success: true` from an API client means **the request was accepted**, not that the field holds what
+you sent. Three distinct failures of this in one day, all through the same tool, all invisible from
+the call's result and all found by reading the record afterwards:
+
+| What was sent | What the call said | What the store held |
+|---|---|---|
+| `labels` as a JSON array | `success: true` | three labels with the brackets and quotes **inside them** |
+| a number as a string | `success: true` | nothing — the field type rejected it and the write was dropped |
+| a full `labels` set | `success: true` | the set, minus what a concurrent writer had added |
+
+The third one is the interesting one, because nobody wrote bad code: a field that **replaces** a
+collection turns read-modify-write into a lost update, and with several writers on one account that
+is not an accident but a guarantee. The fix is not more care — it is an operation that does not need
+the current value: most APIs offer an add/remove verb applied server-side.
+
+**Rules:** after any remote write that matters, **read the field back and compare**. For set-valued
+fields under more than one writer, use the additive verb, and keep whole-set replacement for when
+fixing the entire set is the actual intent. And when several people share one service account,
+remember the audit trail cannot tell them apart — the timestamps can.
 
 ### Invert the direction of a conformance test
 

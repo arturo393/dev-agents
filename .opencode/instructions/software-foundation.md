@@ -553,6 +553,42 @@ earlier. **The mirror could not keep its own pointer current.**
 delete the comment and say what differs and why — a promise nobody can keep is worse than none,
 because it stops the next reader from looking.
 
+### An extraction born from a catalogue dies; one born from a measured defect gets adopted
+
+Measured on one frontend, 79 components: **ten** shared extractions are alive and used; **one** has
+zero consumers. The difference is not quality, size or age — it is **where each one came from**.
+
+| Origin | Result |
+|---|---|
+| A duplication someone **measured**, with the count in its own header — *«these were three copies of ~35 lines, already diverging»* | 10 for 10 adopted |
+| A **consolidation ticket** — «standardise the common components» — with no measured duplication pushing it | 0 consumers in 2 months and 20 days; `git log -S` returns the single commit that created it |
+
+And the proof that quality is not the variable: the best file in that repo — a freshness helper with its
+header explaining the defect it closes, its threshold pinned to the backend file it must match, and a
+`Math.floor` justified in prose — **was reimplemented five times anyway**, three of them with
+`Math.round`, silently inverting its stated policy.
+
+**Rule:** extract when you can write the count in the header. «Three copies, already diverging» is a
+reason; «we should have a component for this» is how you get a fifth copy plus a dead file with a
+green test suite over it.
+
+### Discoverability is not fixed with an index, because an index cannot maintain itself
+
+When a shared component is reimplemented, the usual diagnosis is discipline and the usual fix is a
+catalogue. Both are wrong. In the case above the mechanical causes were: the only index named **7 of
+24** files and omitted precisely the three most reimplemented ones; **13 test headers** pointed at a
+directory that does not exist; and the shared folder mixed 10-line primitives with full pages, so
+finding «a form field» meant opening fifteen files.
+
+Every one of those is an index that drifted. Writing another one repeats the failure — the same one
+this foundation already points at `@mirror-of`.
+
+**Rule:** what works is a **ratchet**, because it can fail. A test that enumerates —«no new file
+defines an inline label+input style object», «nobody computes `Date.now() - new Date(x)` outside the
+freshness helper»— holds a per-file count, goes red when something gets worse **and also when it
+improves without updating the number**. That mechanism is usually already in the repo, applied to
+something else: look for it before inventing one.
+
 ### Before proposing a removal, check the thing is actually duplicated
 
 Surface similarity is not sameness. Three files of the same length and shape can be three different

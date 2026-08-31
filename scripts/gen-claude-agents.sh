@@ -17,6 +17,14 @@ DA="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tools_jira_report="Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_search_issues_in_project, mcp__jira__jira_create_issue, mcp__jira__jira_update_issue, mcp__jira__jira_add_worklog, mcp__jira__jira_add_comment, mcp__jira__jira_transition_issue, mcp__jira__jira_get_transitions, mcp__jira__jira_create_subtask, mcp__jira__jira_link_issues, mcp__jira__jira_weekly_plan, mcp__jira__jira_weekly_update, mcp__jira__jira_bbdd_create, mcp__jira__jira_bbdd_update, mcp__jira__jira_bbdd_append_comment, mcp__jira__sheets_read, mcp__jira__sheets_write, mcp__jira__sheets_metadata, mcp__jira__sheets_analyze, mcp__jira__sheets_find_columns, mcp__jira__confluence_search"
 tools_jira_plan="Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_update_issue, mcp__jira__jira_add_comment, mcp__jira__jira_create_issue, mcp__jira__jira_create_subtask, mcp__jira__jira_get_transitions, mcp__jira__jira_transition_issue, mcp__jira__jira_link_issues"
 
+# Los tres auditores: LECTURA mas Write, y nada de Edit. Que no puedan editar no es un detalle
+# de configuracion, es el limite que los define — un auditor que arregla lo que encuentra deja de
+# poder decir cuanto habia. Write existe solo para su informe, y al terminar se comprueba con
+# `git status` que no tocaron nada mas.
+tools_auditor_ui="Read, Grep, Glob, Bash, Write"
+tools_auditor_arquitectura="Read, Grep, Glob, Bash, Write"
+tools_auditor_resiliencia="Read, Grep, Glob, Bash, Write"
+
 generar(){
   local nombre="$1" src="$DA/.opencode/agents/$1.md" dst="$DA/.claude/agents/$1.md"
   local var="tools_${nombre//-/_}"
@@ -47,5 +55,14 @@ generar(){
 if [ $# -gt 0 ]; then
   for a in "$@"; do generar "$a"; done
 else
-  for f in "$DA"/.opencode/agents/jira-*.md; do generar "$(basename "$f" .md)"; done
+  # El glob era `jira-*.md`, asi que cualquier agente con otro prefijo quedaba fuera y su
+  # version de .claude/ no se generaba nunca — sin error, sin aviso. Paso el 31-Ago-2026 con
+  # los tres auditores. Ahora barre TODOS los agentes: lo que este en .opencode/agents/ se
+  # genera, y no hay una lista que mantener en dos lugares.
+  for f in "$DA"/.opencode/agents/*.md; do
+    b="$(basename "$f" .md)"
+    # Las fundaciones no son agentes: viven en el mismo arbol y se importan aparte.
+    case "$b" in *-foundation) continue ;; esac
+    generar "$b"
+  done
 fi

@@ -619,6 +619,41 @@ testbench-2
 
 ---
 
+## Auditorías en paralelo: el valor está en los límites NEGATIVOS
+
+Los `Code Review Pillars` de arriba dicen **qué** mirar. Esto dice **cómo repartirlo** cuando se
+audita con varios revisores —personas o agentes— a la vez, y por qué tres auditorías separadas
+valen más que tres opiniones superpuestas.
+
+**La regla que lo hace funcionar es lo que cada rol NO puede hacer.** Un revisor sin límite deriva
+hacia lo que le resulta más fácil de opinar, y los tres informes terminan diciendo lo mismo con
+distinto vocabulario: incomparables entre sí y, por lo tanto, imposibles de cruzar.
+
+| Rol | Mira | **NO** mira | **NO** hace |
+|---|---|---|---|
+| **UI/UX** | tokens, espaciado, tipografía, consistencia de tablas y formularios, accesibilidad | arquitectura, datos, lógica de negocio | escribir código |
+| **Arquitectura** | duplicación, acoplamiento, responsabilidades, claridad de nombres | estilos, colores, CSS | escribir código |
+| **QA / Resiliencia** | qué input o condición externa rompe la app, estados no manejados | estética | escribir suites completas |
+
+Tres exigencias más, y cada una tiene su motivo:
+
+1. **Contrato de salida fijo** — mismo esqueleto de secciones y `archivo:línea` en cada hallazgo. Sin
+   eso la síntesis es lectura a mano en vez de un cruce; con eso, dos informes que apuntan a la
+   misma línea son una señal fuerte.
+2. **Ninguno escribe código.** El auditor que arregla lo que encuentra deja de poder decir cuánto
+   había: mezcla el diagnóstico con el tratamiento y nadie puede medir el alcance después. La
+   separación se hace con **herramientas**, no con una promesa: al auditor se le da lectura y un
+   único archivo de salida, y al terminar se comprueba con `git status` que no tocó nada más.
+3. **La síntesis descarta, y ese es su trabajo.** Cruzar los tres informes contra las restricciones
+   reales —plazo, prioridad, quién va a mantener esto— y **tirar** lo que no rinde: refactors
+   académicos, rediseños que no agregan valor, purismo. Un plan que incluye todo lo encontrado no
+   es un plan, es el informe otra vez.
+
+**El límite honesto:** si no existe un documento de directrices contra el cual comparar, la
+auditoría de UI compara contra los tokens del tema y contra los hallazgos ya acumulados. Eso es
+legítimo, pero hay que **decirlo**: sin estándar escrito, «desviación del estándar» es una opinión
+bien informada, no una medición.
+
 ## Audit Loop (Convergence)
 
 When asked to audit until convergence (zero findings):

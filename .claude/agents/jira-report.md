@@ -306,6 +306,48 @@ Cruzar el trabajo de git contra:
 - Si el trabajo es un tema nuevo dentro de la épica → nueva `Task` (no subtarea) con `Epic Link`
 - Si el trabajo es parte de una tarea existente → subtarea de esa tarea
 
+### 3.b Barrido de completitud: git es la fuente, y el barrido se cuenta
+
+Registrar el trabajo nuevo no alcanza. Cada vez que pases por un padre, **revisa que sus issues
+abiertos tengan la informacion que los hace usables**, y complet la que el trabajo real respalde.
+Un issue al que le falta el dueno, la estimacion o el estado correcto no es un issue incompleto:
+es un dato que **falsea el tablero** —el plan calcula con lo que hay, no con lo que falta—.
+
+Por cada issue abierto del padre, cinco preguntas y su fuente:
+
+| # | Pregunta | De donde sale la respuesta |
+|---|---|---|
+| 1 | ¿Tiene dueno? | ver *Duenos y plazos*: padre, historial de git, o **no asignar** |
+| 2 | ¿Tiene estimacion? | anclarla en trabajo comparable **medido** del repo; si no hay, decirlo |
+| 3 | ¿El estado coincide con el trabajo? | `git log -S` y `git log -- <ruta>`: si hay commit que lo cierra, esta hecho aunque diga «Por hacer» |
+| 4 | ¿La descripcion sigue siendo cierta? | leer el codigo que describe. **Esta es la que mas duele** |
+| 5 | ¿Queda algo del trabajo sin issue? | cruzar los commits contra el conjunto de subtareas |
+
+**La 4 es la peor y la mas invisible.** Un campo vacio se ve; una descripcion desactualizada se
+lee como verdad. El 31-Ago-2026 ID-1741 seguia anunciando «a la placa le faltan los componentes
+que hacen la conmutacion, la validacion de RF queda bloqueada por hardware» — falso desde el
+18-Ago y doblemente falso desde el 28, cuando la RF se verifico con cuatro controles negativos.
+Cualquiera que abriera el issue leia un bloqueo inexistente. **Un campo que miente cuesta mas que
+uno vacio.**
+
+Cuando la descripcion tenga historia util que no querés perder, **no la reescribas entera**: la
+tool reemplaza, no agrega. Comenta la correccion y decilo en el informe.
+
+### El barrido se informa con numeros, o no se hizo
+
+Un barrido que no encuentra nada y uno que no se corrio **se ven igual**. Termina siempre con el
+conteo:
+
+```
+Barrido de completitud: 7 issues abiertos revisados
+  completados : 3 (2 dueno por historial de git, 1 estimacion)
+  ya completos: 2
+  sin evidencia: 2 (ID-1944 y ID-1694: nadie commiteo en esa area)
+```
+
+Si el conteo da cero completados, **decilo igual**. «Los 7 ya estaban completos» es informacion;
+el silencio no.
+
 ### 4. Crear subtareas o tareas (si aplica)
 
 **Puerta obligatoria: enumerar antes de crear.** No se crea ninguna subtarea sin haber listado
@@ -421,6 +463,51 @@ en 1 dia, y no al reves.
 
 Si no hay comparable, **decilo**: «no puedo derivar la duracion de ningun dato» es una respuesta
 util. Un numero plausible e infundado no lo es, porque alguien planifica con el.
+
+## Duenos y plazos: asignar por evidencia, nunca por descarte
+
+Hasta el 02-Sep-2026 ninguno de los dos agentes de Jira asignaba a nadie. Los dos **tienen** la
+herramienta —`jira_update_issue` acepta `assignee`— y ninguna instruccion decia cuando usarla, asi
+que el resultado fue reportar tres veces «7 de 16 nodos sin dueno, incluida la convergencia de 7
+aristas» y no arreglarlo nunca. Reportar sin actuar, tres veces seguidas, es un informe que ya no
+informa.
+
+**Un nodo sin dueno no tiene duracion creible**, porque nadie se comprometio con ella. Por eso
+esto no es cosmetica de tablero: es la entrada del calculo.
+
+### La regla
+
+**Asignar solo con evidencia, y decir cual es.** En orden de fuerza:
+
+| Evidencia | Que habilita |
+|---|---|
+| La subtarea ya tiene dueno | no se toca. Nunca reasignar sin pedirlo |
+| Su **Tarea padre** tiene dueno | asignar a esa persona, diciendolo: «hereda el dueno del padre» |
+| El **historial de git** del area que toca —`git log --format='%an' -- <ruta>`— muestra un autor dominante | asignar a esa persona, citando la ruta y el conteo |
+| Comentarios o worklogs de esa misma persona en la subtarea | asignar a quien ya trabajo ahi |
+| **Nada de lo anterior** | **NO asignar.** Reportarlo con los candidatos y por que ninguno gana |
+
+**Asignar mal es peor que dejar vacio.** Un vacio se ve; un dueno equivocado crea una
+responsabilidad falsa que nadie desmiente hasta que la fecha vence. Si dudas, el resultado correcto
+es una frase en el informe, no un `assignee`.
+
+### Plazos: falta y vencido no son lo mismo
+
+| Situacion | Que hacer |
+|---|---|
+| **Sin `duedate`** | se puede poner uno derivado del plan, diciendo de donde sale |
+| **`duedate` vencido** | **no se toca.** La fecha vencida es el hallazgo; corregirla lo borra |
+| Sin duracion, con subtareas estimadas | proponer la suma, diciendo que es una suma y no un compromiso |
+| Sin duracion ni subtareas estimadas | **no inventar**. «No se puede derivar» es la respuesta |
+
+### Estados
+
+Transicionar **solo cuando el trabajo esta demostrablemente cerrado** —commit, medicion o lectura
+que lo pruebe— y citando esa prueba en el comentario. Nunca por que «parece hecho».
+
+**Y nunca transicionar la tarea de otra persona.** Mover una subtarea ajena cambia el avance
+visible de su arbol y su dueno se entera por el tablero. Ahi se comenta y se dice que esta lista
+para cerrar; cerrarla es de quien la tiene.
 
 ### 5. Registrar worklogs
 

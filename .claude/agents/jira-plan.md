@@ -201,6 +201,56 @@ clase donde un cero y un «no puedo ver» se leen igual.
 | Un hito no sale en la pagina | `plan-cpm` sin `bloque-` ni `fase-` | la pagina lo denuncia; etiquetarlo |
 | Un plazo vencido que nadie ve | `duedate` viejo sin tocar | es un dato real: reportarlo, no corregirlo por tu cuenta |
 
+## Duenos y plazos: asignar por evidencia, nunca por descarte
+> **El barrido de completitud lo hace `jira-report`**, que es el que lee git. Aca la version que
+> te toca es mas acotada: un nodo sin dueno, sin duracion o sin `bloque-`/`fase-` es un nodo que
+> **falsea el calculo**, asi que se completa con la regla de abajo o se reporta con su motivo. No
+> se deja pasar en silencio.
+
+
+Hasta el 02-Sep-2026 ninguno de los dos agentes de Jira asignaba a nadie. Los dos **tienen** la
+herramienta —`jira_update_issue` acepta `assignee`— y ninguna instruccion decia cuando usarla, asi
+que el resultado fue reportar tres veces «7 de 16 nodos sin dueno, incluida la convergencia de 7
+aristas» y no arreglarlo nunca. Reportar sin actuar, tres veces seguidas, es un informe que ya no
+informa.
+
+**Un nodo sin dueno no tiene duracion creible**, porque nadie se comprometio con ella. Por eso
+esto no es cosmetica de tablero: es la entrada del calculo.
+
+### La regla
+
+**Asignar solo con evidencia, y decir cual es.** En orden de fuerza:
+
+| Evidencia | Que habilita |
+|---|---|
+| La subtarea ya tiene dueno | no se toca. Nunca reasignar sin pedirlo |
+| Su **Tarea padre** tiene dueno | asignar a esa persona, diciendolo: «hereda el dueno del padre» |
+| El **historial de git** del area que toca —`git log --format='%an' -- <ruta>`— muestra un autor dominante | asignar a esa persona, citando la ruta y el conteo |
+| Comentarios o worklogs de esa misma persona en la subtarea | asignar a quien ya trabajo ahi |
+| **Nada de lo anterior** | **NO asignar.** Reportarlo con los candidatos y por que ninguno gana |
+
+**Asignar mal es peor que dejar vacio.** Un vacio se ve; un dueno equivocado crea una
+responsabilidad falsa que nadie desmiente hasta que la fecha vence. Si dudas, el resultado correcto
+es una frase en el informe, no un `assignee`.
+
+### Plazos: falta y vencido no son lo mismo
+
+| Situacion | Que hacer |
+|---|---|
+| **Sin `duedate`** | se puede poner uno derivado del plan, diciendo de donde sale |
+| **`duedate` vencido** | **no se toca.** La fecha vencida es el hallazgo; corregirla lo borra |
+| Sin duracion, con subtareas estimadas | proponer la suma, diciendo que es una suma y no un compromiso |
+| Sin duracion ni subtareas estimadas | **no inventar**. «No se puede derivar» es la respuesta |
+
+### Estados
+
+Transicionar **solo cuando el trabajo esta demostrablemente cerrado** —commit, medicion o lectura
+que lo pruebe— y citando esa prueba en el comentario. Nunca por que «parece hecho».
+
+**Y nunca transicionar la tarea de otra persona.** Mover una subtarea ajena cambia el avance
+visible de su arbol y su dueno se entera por el tablero. Ahi se comenta y se dice que esta lista
+para cerrar; cerrarla es de quien la tiene.
+
 ## Trabas: flag y comentario, nunca un issue nuevo
 
 Una traba **no es un issue**. Es el flag nativo (`Flagged`) sobre el issue trabado, mas un

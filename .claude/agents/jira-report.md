@@ -329,6 +329,30 @@ git log --pretty='%s%n%b' | grep -oE '<PROJ>-[0-9]+' | sort | uniq -c | sort -rn
 Si la respuesta de `mcp__jira__jira_search_issues` no cabe en el contexto, leer el archivo que deja la tool
 y extraer `key`, `status` y `summary` de cada una — el listado completo es el insumo, no una muestra.
 
+### Un `parent = X` que devuelve de menos no falla: verificalo con un segundo conjunto
+
+Enumerar **una vez** no alcanza. El 31-Ago-2026, `parent = ID-1386` devolvio **14** subtareas; la
+misma consulta con `AND statusCategory != Done` revelo **ID-1694 e ID-1712, que la primera omitio
+sin ningun error**. Un conteo corto que no falla es indistinguible de uno completo, y si te fias
+del primero declaras «enumeracion completa» con issues invisibles.
+
+Y no hay red de seguridad: `/search/jql` devuelve **`total: null`**, asi que no se puede comparar
+contra un total.
+
+**Regla: enumera cada padre con DOS consultas y diffea los conjuntos.**
+
+```
+A = parent = <clave> ORDER BY key ASC
+B = parent = <clave> AND statusCategory != Done ORDER BY key ASC
+```
+
+`B` tiene que ser subconjunto de `A`. **Si aparece algo en `B` que no esta en `A`, la enumeracion
+es incompleta y el conjunto bueno es la union** — y hay que decirlo en la respuesta, porque
+significa que cualquier conteo anterior de ese padre estaba mal.
+
+Es la misma clase que el resto de este documento: la pregunta no es «cuantos devolvio» sino
+«puede esta consulta devolver de menos sin avisar». Puede.
+
 **Evidencia (20-Ago-2026):** se comentó el trabajo de una serie de seis días en el padre ID-1477 y se
 propusieron cuatro subtareas nuevas. El padre tenía **35 subtareas**, y cuatro de ellas eran el hogar
 exacto de ese trabajo — una, ID-1705, seguía en «Por hacer» con el trabajo commiteado días antes.

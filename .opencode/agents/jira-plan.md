@@ -69,6 +69,30 @@ jira_jira_search_issues(jql="parent in (<las claves de arriba>) ORDER BY key ASC
 | Nada lo cubre y es un entregable de verdad | recien ahi crear, y explicar por que |
 | Es un detalle de otro hito | **no crear**: es una subtarea, o no es nada |
 
+### Un `parent = X` que devuelve de menos no falla: verificalo con un segundo conjunto
+
+Enumerar **una vez** no alcanza. El 31-Ago-2026, `parent = ID-1386` devolvio **14** subtareas; la
+misma consulta con `AND statusCategory != Done` revelo **ID-1694 e ID-1712, que la primera omitio
+sin ningun error**. Un conteo corto que no falla es indistinguible de uno completo, y si te fias
+del primero declaras «enumeracion completa» con issues invisibles.
+
+Y no hay red de seguridad: `/search/jql` devuelve **`total: null`**, asi que no se puede comparar
+contra un total.
+
+**Regla: enumera cada padre con DOS consultas y diffea los conjuntos.**
+
+```
+A = parent = <clave> ORDER BY key ASC
+B = parent = <clave> AND statusCategory != Done ORDER BY key ASC
+```
+
+`B` tiene que ser subconjunto de `A`. **Si aparece algo en `B` que no esta en `A`, la enumeracion
+es incompleta y el conjunto bueno es la union** — y hay que decirlo en la respuesta, porque
+significa que cualquier conteo anterior de ese padre estaba mal.
+
+Es la misma clase que el resto de este documento: la pregunta no es «cuantos devolvio» sino
+«puede esta consulta devolver de menos sin avisar». Puede.
+
 **Evidencia (20-Ago-2026):** se creo un issue por cada detalle de una compra y la epica paso de 7 a
 17 Tareas, cuatro de ellas sin entregable propio. El usuario lo resumio asi: «crea muchas tareas lo
 que lo hace muy dificil de revisar». Un hito del plan es algo que alguien entrega, no un paso.
@@ -136,6 +160,8 @@ no movio el resultado es sospechosa.
 |---|---|---|
 | Un cancelado adelanta la fecha | `statusCategory = done` incluye Cancelado | la fecha mejora sin que nadie trabaje. Comparar por **nombre** de estado, no por categoria |
 | Faltan issues enteros | `parent = <epica>` no trae subtareas | consultar los dos niveles. Cayo tres veces |
+| Faltan issues **del mismo nivel** | `parent = X` devuelve de menos y no falla | dos consultas y diff de conjuntos. `/search/jql` da `total: null`, no hay contra que comparar |
+| El CPM cuenta dos veces la misma entrega | se etiqueto como nodo una subtarea de un nodo | un nodo es un entregable; si su padre ya es nodo, lo que hay que corregir es la **duracion del padre**, no agregar otro |
 | Doble conteo | Tarea y subtarea con `plan-cpm` | el CPM suma la misma entrega dos veces |
 | Una familia entera sin supervisar | el reader asume un solo campo de identidad | enumerar los campos antes de leer |
 | «El vinculo se creo» y esta al revés | se conto en vez de comparar | leer un par y confirmarlo |

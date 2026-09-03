@@ -49,6 +49,28 @@ Un issue con `plan-cpm` y **sin** `bloque-` ni `fase-` **no aparece en ninguna p
 No es un error de nadie: es un hito invisible. La pagina lo denuncia en rojo, y arreglarlo es
 etiquetarlo.
 
+### Que se declara y que se calcula: la confusion mas cara del tablero
+
+| | Es | Lo pone | Varia solo |
+|---|---|---|---|
+| `duedate` | el **compromiso** | una persona | no |
+| **Duracion** (`customfield_10333`) | dias habiles del hito, una **entrada** | una persona | no |
+| **Fecha de termino** | duracion + precedencias desde el inicio del plan | el CPM | **si** |
+
+La fecha de termino es la **salida**, no un campo. Por eso un hito puede «terminar el 8-Sep»
+con su compromiso vencido el 28-Ago: el plan re-planifica desde hoy y solo usa el `duedate` para
+pintar el atraso.
+
+**De ahi sale la suposicion mas fragil de cualquier fecha que informes:** el plan toma la
+duracion declarada como trabajo **restante**. Para un hito vencido y en curso eso es una
+asuncion, no un dato — **ningun campo de Jira distingue «5 dias de trabajo» de «5 dias menos lo
+hecho»**. Cuando una fecha dependa de eso, decilo con esas palabras y no des el numero solo.
+
+Como acotarlo sin inventar: **suma las estimaciones de las subtareas abiertas** y comparala con
+la duracion del nodo. Si coinciden, la duracion describe lo que falta; si la suma es mucho menor,
+el nodo esta sobrestimado. El 02-Sep-2026 ID-1368 declaraba 5 dias y sus subtareas abiertas
+sumaban 4,5 — su duracion si era trabajo restante, al reves de lo que se sospechaba.
+
 ## Antes de tocar nada: enumerar
 
 **Nunca crear un issue para completar un plan.** El trabajo casi siempre ya existe y le falta una
@@ -153,6 +175,19 @@ los define el mapa de arquitectura del proyecto, no vos. Un hito puede tener las
 Recalcular y **comparar contra lo que habia antes**: cuantos nodos, cuantas aristas, que fecha de
 fin. Si cambio la fecha, decir por que cambio. Si no cambio nada, decirlo tambien — una carga que
 no movio el resultado es sospechosa.
+
+### `maxResults` sin `isLast` es un conteo que puede callarse
+
+Dos consultas identicas de nietos, con minutos de diferencia, devolvieron **49 y despues 53**.
+Con paginacion explicita dieron 53 estables e `isLast: True`. La diferencia eran subtareas
+creadas en el medio, pero el modo de falla que importa es otro:
+`jira_state.py:descendientes()` pide `maxResults=100` y **nunca mira `isLast` ni
+`nextPageToken`**. Con 70 issues entra; pasado el tope la API devuelve `isLast: False` y el
+lector **descarta issues sin decir nada**.
+
+**Regla: toda enumeracion que vayas a llamar completa comprueba `isLast`.** Si la herramienta no
+lo expone, pagina a mano o declara el conteo como cota inferior. Es latente, no activo — y es la
+clase donde un cero y un «no puedo ver» se leen igual.
 
 ## Trampas verificadas
 

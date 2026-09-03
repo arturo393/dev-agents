@@ -387,6 +387,41 @@ Luego vincular a la épica con `mcp__jira__jira_update_issue(issueKey="<nuevo_is
 - Summary: máximo 80 caracteres. Formato: `"<Área>: <acción principal>"`. Ej: `"FW-ULAD: migrar detector DL a PA4"`
 - Description: máximo 5 líneas, texto plano sin markdown. Formato: qué se necesita hacer + contexto breve + criterio de éxito. **No copiar el documento local**. No incluir listas, tablas, hashes ni rutas de archivos
 
+### El formato de `estimate`: un compuesto se descarta en silencio
+
+El 02-Sep-2026, `estimate = "1d 4h"` sobre ID-1976 devolvio `success: true`, `statusCode: 204`
+y `valueApplied.originalEstimate: null`. Al leer el issue: `timeoriginalestimate: null` y
+`timetracking: {}`. **El campo quedo vacio y nada en la respuesta lo gritaba** — salvo ese `null`
+en `valueApplied`, facil de pasar por alto entre un `success` y un `204`.
+
+`"3d"`, `"1d"` y `"12h"` sirvieron en la misma tanda. Lo que fallo fue el **compuesto con
+espacio**.
+
+| Poner | En vez de |
+|---|---|
+| `12h` | `1d 4h` |
+| `4h` | `0.5d` |
+| `20h` | `2d 4h` |
+
+**Regla: para estimaciones usa una sola unidad, preferentemente horas.** Un dia habil son 8 h,
+asi que toda fraccion se expresa exacta. Y despues **leelo de vuelta**: el `valueApplied` de la
+tool ya trae la pista, pero solo el issue dice la verdad.
+
+### Una estimacion se ancla en trabajo medido, no en intuicion
+
+Antes de poner un numero, busca en el repo **algo comparable que ya este terminado** y mide
+cuanto tomo. Es la diferencia entre «3 dias porque suena» y «2 dias, que es lo que tomo lo mismo
+la vez pasada».
+
+Ejemplo real (02-Sep-2026): para estimar tres subtareas de firmware sin empezar se midio la
+medicion de DC —el trabajo mas parecido que si estaba hecho: mensaje de protocolo, handler,
+tabla, biblioteca de Python y tests, 36 archivos—. Del primer commit a funcionar en banco: **2
+dias habiles**. Con ese ancla, «ventiladores» —un comando, dos salidas, sin ADC ni tabla— salio
+en 1 dia, y no al reves.
+
+Si no hay comparable, **decilo**: «no puedo derivar la duracion de ningun dato» es una respuesta
+util. Un numero plausible e infundado no lo es, porque alguien planifica con el.
+
 ### 5. Registrar worklogs
 
 ```

@@ -494,18 +494,55 @@ person who had just decided it never would.
 ## Resilience & Fault Tolerance
 
 Circuit Breaker, Bulkhead, Observability, Eventual Consistency, Saga and Feature Flags are standard
-patterns — apply them per `Security by Context` (§above) and don't re-derive them here. The two that
-are *not* obvious and belong in this foundation:
+patterns — apply them per `Security by Context` (§above) and don't re-derive them here. **This is the
+generic foundation, so it keeps patterns you don't use yet:** a future cloud service or a quant system
+needs the three below even though the current firmware and diagnostic products don't touch two of them.
+"Which product uses it" is the firmware foundation's scoping job, not this one's — a generic knowledge
+base is not dead code. What each of the three needs is a note on *where it bites*, so it is not run
+against the wrong target.
 
-### 7. Chaos Engineering
-Inject controlled failures in production to verify resilience.
+### Fuzz Testing — the parsers, on host (Tier 2)
 
-**Tool:** Netflix Chaos Monkey.
+On an internet-facing surface the textbook framing holds: random malformed input to find holes before an
+attacker does. But most embedded products sit on an isolated RF or serial bus (`Security by Context`), so
+there the payoff is not an attacker, it is the code that turns bytes off the wire into a struct — **frame
+decoders, length fields, state machines**. Fuzz those on host (firmware `Testing Tiers`, Tier 2): random
+bytes and lengths in, assert it never reads out of bounds, never mis-slices, and rejects what it cannot
+parse. The `.at()` / bounds rules of `Memory Safety` are the assertions; ASan/UBSan the detector. This is
+**PBT** (methodology #8) with the property "stays in bounds / does not crash" — use the PBT row for pure
+logic, this for the byte-level parsers.
 
-### 8. Fuzz Testing
-Send massive random data to find vulnerabilities.
+Evidence: the diag's RDSS parser carried two length conventions. `save_frame_vlad` read the high length
+byte (`0`) as the length on a 2-byte frame and silently dropped the payload — `getDataAsUint8()` returned
+`0`. A host fuzzer over `CommandMessage(buffer, length)` asserting "decoded length ≤ buffer" finds that
+class in one run. It was found instead by hand, months later, as a lost attenuation value.
 
-**Goal:** Find holes before an attacker does.
+### Chaos Engineering — distributed systems, and its embedded twin
+
+The pattern: in a fleet of many nodes, kill servers, sever network links and stall dependencies **in
+production, on purpose**, to prove the whole survives the failure of any part instead of assuming it
+(Netflix Chaos Monkey). It earns its keep the day a product is distributed — many services, a network
+between them, no single node you can reason about alone. None of the current products is that (super-loop
+MCUs, one RTOS, a single-host deploy), so on those the same idea runs at a smaller scale and a different
+layer: **physical fault injection on the bench (Tier 3)** — pull the serial cable mid-transaction, brown
+out during a flash write, drop the LoRa link, hold high a line that should toggle. Same principle at two
+scales: break it deliberately where you can, and confirm it degrades instead of lying. The embedded form
+pairs with the `Regla de Oro` in `firmware-foundation.md`.
+
+### Stress Testing — heavy tails and the ruin barrier
+
+For a decision system whose failure is *loss* rather than a crash — a quant or trading engine above all —
+ordinary backtesting is the wrong instrument: it samples the body of the distribution, and the body is
+not what ruins you. Feed it the tail on purpose: shocks of 15–20σ, "impossible" under a Gaussian and
+routine under heavy tails, and confirm the ruin barrier holds rather than the average P&L merely looking
+healthy.
+
+The concept is already in this repo, applied elsewhere: `firmware-foundation.md` → `Memory Safety` makes
+the **ergodicity** point on leaks — 10,000 parallel runs green for five minutes say nothing about one
+device over five years, because a 1 byte/hour leak is ruin on the *sequential* trajectory while the
+*ensemble* average stays 100 % green. Capital is the same mathematics: design and test for the single path
+that is actually lived, never the mean of the paths that are not. A backtest is an ensemble; the account
+is a trajectory — and it only gets one.
 
 ---
 

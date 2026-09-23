@@ -69,8 +69,10 @@ modelo que responde cambia entre llamadas, e incluso entre pasos de una misma co
 
 **Medido:** una consulta chica por `curl` la contestó `groq/openai/gpt-oss-120b`. La misma vía
 `opencode run` (≈37k tokens de contexto por las fundaciones) falló en groq con **413** (demasiado
-grande), en big-pickle con **401**, y terminó en `antigravity/gemini-3.7-flash-high`. Es decir:
-desde opencode, `razonamiento` hoy es casi siempre Gemini 3.7 Flash.
+grande), en big-pickle con **401**, y terminó en `antigravity/gemini-3.7-flash-high`. Una hora
+después, otra corrida desde opencode la contestaron `gpt-oss-120b` y `nemotron-3-super` sin
+ningún 413. **No hay patrón fijo: siempre leer el log.** El conteo de razonamiento sale en 0 por
+este camino aunque el modelo razone: no significa nada.
 
 **Regla:** después de cada corrida por OmniRoute, leer qué modelo contestó y reportarlo:
 

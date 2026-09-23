@@ -6,14 +6,14 @@ description: Delegar una consulta a otro modelo (OmniRoute razonamiento/codigo/g
 # opencode como herramienta
 
 Qué hace: ejecuta `opencode run` sin interfaz y trae la respuesta de otro modelo o agente.
-Cómo se usa: plantilla de abajo, con modelo, nivel de razonamiento y agente explícitos.
+Cómo se usa: plantilla de abajo. **Modelo por defecto para todo: `omniroute/razonamiento`** (gratis).
 Qué NO hace: no edita código. La respuesta es una opinión que se verifica, nunca evidencia.
 
 ## Plantilla
 
 ```bash
 cd /tmp && timeout 300 opencode run \
-  -m opencode/<modelo> --variant <nivel> --agent plan \
+  -m omniroute/razonamiento --agent plan \
   --dir <repo absoluto> --format json "<consulta>" 2>&1 \
 | jq -rc 'select(.type=="text" or .type=="error" or .type=="step_finish")
   | if .type=="text" then .part.text
@@ -21,6 +21,10 @@ cd /tmp && timeout 300 opencode run \
     else "[costo US$ \(.part.cost) · razonamiento \(.part.tokens.reasoning) tok]" end'
 ```
 
+- **Decisión del usuario (23-Sep-2026): `razonamiento` para todo** — mecánico y segundas opiniones.
+  Otro modelo solo si el usuario lo nombra ("pregúntale a GPT"); ahí se usa la tabla de Zen, con
+  `-m opencode/<modelo> --variant <nivel>`. Si `razonamiento` falla (todos los modelos del combo
+  caídos), decirlo y preguntar antes de pasar a uno pago.
 - `--dir` fija el repo que ve el modelo. Carga las fundaciones de `dev-agents` (~29k tokens de
   contexto incluso para un "OK"), así que el piso de costo no es cero.
 - Con `-f archivo` se adjuntan archivos (un datasheet, un log).
@@ -85,11 +89,10 @@ curl -s -H "Authorization: Bearer $OMNIROUTE_API_KEY" -H 'Content-Type: applicat
 | jq -r '"[\(.model)]", .choices[0].message.content'
 ```
 
-Cuándo usarlo: tareas mecánicas y segundas opiniones donde el costo importa más que saber
-exactamente qué modelo opinó. Para una segunda opinión que haya que defender, un modelo fijo de
-la tabla de abajo.
+Es el modelo por defecto para todo. Como el modelo cambia, al presentar una segunda opinión
+nombrar el que contestó según el log: «opinó gemini-3.7-flash-high vía razonamiento».
 
-## Modelos de opencode Zen: listado ≠ accesible
+## Modelos de opencode Zen (solo si el usuario nombra uno): listado ≠ accesible
 
 `opencode models` lista 153, pero la cuenta tiene acceso a una parte. Medido el 23-Sep-2026:
 

@@ -76,6 +76,11 @@ Critical/High block progress. Medium → fix + continue. Low → log.
 
 **Golden rule:** No test, no production change. Every fix includes its test.
 
+**Spec before code for anything new.** A new app, module, service, driver or feature gets a spec the
+user **explicitly approved** before any implementation — a half-page one for a prototype, a full one
+for a product, and a full one again before a prototype is promoted. Bugs, scripts and docs are
+exempt. Procedure: skill `spec-first`.
+
 ### Test polarity: a test that documents a defect is not a test that prevents it
 
 A test written to **prove a bug exists** passes *because* the bug exists. When someone fixes the

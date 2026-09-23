@@ -1,6 +1,6 @@
 ---
 name: opencode
-description: Delegar una consulta a otro modelo (GPT, Gemini, GLM, Grok, Kimi, Qwen) o a un agente de opencode ejecutando `opencode run` desde Claude Code. Usar cuando el usuario pida: segunda opinión de otro modelo, "preguntale a GPT/Gemini", contrastar un diagnóstico o una spec, delegar una tarea mecánica barata (resumir, extraer de un datasheet) para no gastar el límite de Claude, o correr un auditor de opencode. Solo para Claude Code: dentro de opencode no tiene sentido.
+description: Delegar una consulta a otro modelo (OmniRoute razonamiento/codigo/gratis, GPT, Gemini, GLM, Grok, Kimi, Qwen) o a un agente de opencode ejecutando `opencode run` desde Claude Code. Usar cuando el usuario pida: segunda opinión de otro modelo, "preguntale a GPT/Gemini", contrastar un diagnóstico o una spec, delegar una tarea mecánica barata (resumir, extraer de un datasheet) para no gastar el límite de Claude, o correr un auditor de opencode. Solo para Claude Code: dentro de opencode no tiene sentido.
 ---
 
 # opencode como herramienta
@@ -50,7 +50,46 @@ X para…") **no está verificado**: en la prueba contestó bien pero la salida 
 llamada al subagente, así que pudo haberlo resuelto `plan` solo. Si hace falta el subagente de
 verdad, correrlo desde el TUI de opencode.
 
-## Modelos: listado ≠ accesible
+## OmniRoute: `razonamiento`, `codigo`, `gratis` — gratis, pero no sabes quién contesta
+
+`omniroute/<combo>` pasa por el router local (`omniroute serve`, `localhost:20128`, clave en
+`$OMNIROUTE_API_KEY`). Cada combo es una lista de modelos gratuitos con estrategia `auto`: **el
+modelo que responde cambia entre llamadas, e incluso entre pasos de una misma corrida**. Costo 0.
+`--variant` no aplica (el combo no declara niveles).
+
+| Combo | Qué hay detrás (según `/api/combos`, 23-Sep-2026) |
+|---|---|
+| `razonamiento` | qwen3.6-27b y gpt-oss-120b (groq), claude-opus-4-6-thinking y gemini-3.7-flash-high (antigravity), nemotron-3-super, big-pickle, mimo, aihorde |
+| `codigo` | gpt-oss-120b, qwen3.6-27b, claude-opus-4-6-thinking, gemini-3.1-pro-low, north-mini-code, … |
+| `gratis` | gpt-oss-120b/20b, qwen3.6-27b, nemotron, gemini-3.7-flash-high, gemini-3.1-pro-low, … |
+
+**Medido:** una consulta chica por `curl` la contestó `groq/openai/gpt-oss-120b`. La misma vía
+`opencode run` (≈37k tokens de contexto por las fundaciones) falló en groq con **413** (demasiado
+grande), en big-pickle con **401**, y terminó en `antigravity/gemini-3.7-flash-high`. Es decir:
+desde opencode, `razonamiento` hoy es casi siempre Gemini 3.7 Flash.
+
+**Regla:** después de cada corrida por OmniRoute, leer qué modelo contestó y reportarlo:
+
+```bash
+curl -s -H "Authorization: Bearer $OMNIROUTE_API_KEY" "localhost:20128/api/usage/call-logs?limit=6" \
+| jq -r '.[] | "\(.timestamp[11:19])  \(.status)  \(.provider)/\(.model)"'
+```
+
+Para una pregunta sin repo (sin archivos que leer), ir directo al router: menos contexto, más
+rápido, y la respuesta trae el modelo en `.model`:
+
+```bash
+curl -s -H "Authorization: Bearer $OMNIROUTE_API_KEY" -H 'Content-Type: application/json' \
+  localhost:20128/v1/chat/completions \
+  -d '{"model":"razonamiento","messages":[{"role":"user","content":"<consulta>"}]}' \
+| jq -r '"[\(.model)]", .choices[0].message.content'
+```
+
+Cuándo usarlo: tareas mecánicas y segundas opiniones donde el costo importa más que saber
+exactamente qué modelo opinó. Para una segunda opinión que haya que defender, un modelo fijo de
+la tabla de abajo.
+
+## Modelos de opencode Zen: listado ≠ accesible
 
 `opencode models` lista 153, pero la cuenta tiene acceso a una parte. Medido el 23-Sep-2026:
 

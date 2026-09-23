@@ -86,18 +86,18 @@ else
 fi
 
 echo
-echo "## 5. jira-report — las dos variantes del mismo agente"
+echo "## 5. jira — las dos variantes del mismo agente"
 echo "   (.claude/ se GENERA desde .opencode/; si difieren en estructura, regenerar)"
 echo
 DA=/home/arturo/.config/opencode/dev-agents
-if [ -f "$DA/.opencode/agents/jira-report.md" ] && [ -f "$DA/.claude/agents/jira-report.md" ]; then
-  a=$(grep -cE '^#{1,4} ' "$DA/.opencode/agents/jira-report.md")
-  b=$(grep -cE '^#{1,4} ' "$DA/.claude/agents/jira-report.md")
+if [ -f "$DA/.opencode/agents/jira.md" ] && [ -f "$DA/.claude/agents/jira.md" ]; then
+  a=$(grep -cE '^#{1,4} ' "$DA/.opencode/agents/jira.md")
+  b=$(grep -cE '^#{1,4} ' "$DA/.claude/agents/jira.md")
   if [ "$a" -eq "$b" ]; then
     echo "  OK — misma estructura ($a secciones en las dos)"
   else
     echo "  *** DERIVARON: .opencode tiene $a secciones, .claude tiene $b ***"
-    echo "      correr: $DA/scripts/gen-claude-jira-report.sh"
+    echo "      correr: $DA/scripts/gen-claude-agents.sh jira"
   fi
 else
   echo "  falta alguna de las dos variantes"

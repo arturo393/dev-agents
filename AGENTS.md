@@ -12,8 +12,7 @@ Knowledge base for AI assistants. Not a code repo — no build, no tests, no CI.
   firmware-foundation.md  ← MISRA-C, C++20, Testing Tiers, Layered Architecture
 
 .opencode/agents/         ← Agent sources (edit HERE)
-  jira-report.md          ← git → Jira: worklogs, comments, executive summary
-  jira-plan.md            ← Jira → plan pages: labels, durations, Blocks links
+  jira.md                 ← git → Jira (worklogs, states, blockers) and the plan the pages read
 .claude/agents/           ← GENERATED for Claude Code by scripts/gen-claude-agents.sh
                             (same body, MCP tool names rewritten mcp__jira__*)
 
@@ -38,8 +37,8 @@ launch/                   ← Old project-specific workflows (ignore)
 - **Before opening a tracker issue, enumerate the ones that already exist.** List every child of the
   parent (`parent = <key>`, the whole set) and cross-reference the keys already in the git history;
   report the work on the child that covers it, and create only what nothing covers. The principle is
-  in `software-foundation.md` → Method Before Diagnosis; the executable step is step 4 of the
-  `jira-report` agent, which must not create a subtask before that listing
+  in `software-foundation.md` → Method Before Diagnosis; the executable step is the `jira`
+  agent, which lists before proposing and creates only after the user confirms
 
 ## Editing an Agent
 
@@ -47,7 +46,7 @@ The `.opencode/` copy is the source; the `.claude/` one is generated. Edit the s
 
 ```bash
 scripts/gen-claude-agents.sh            # all of them
-scripts/gen-claude-agents.sh jira-plan  # just one
+scripts/gen-claude-agents.sh jira       # just one
 ```
 
 Only the tool list lives in the script — Claude Code needs it and opencode does not. The

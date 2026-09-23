@@ -2,7 +2,7 @@
 # Genera skills de Hermes desde .claude/agents/<nombre>.md
 #
 # Uso:  scripts/gen-hermes-agents.sh            (regenera todos)
-#       scripts/gen-hermes-agents.sh jira-plan  (solo uno)
+#       scripts/gen-hermes-agents.sh jira       (solo uno)
 #
 # En Hermes, cada skill es un directorio bajo ~/.hermes/skills/dev-agents/<nombre>/SKILL.md
 # Este script crea los directorios y copia los archivos generados para Claude (ya que el formato es compatible).

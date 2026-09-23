@@ -2,7 +2,7 @@
 # Genera .claude/agents/<nombre>.md desde .opencode/agents/<nombre>.md
 #
 # Uso:  scripts/gen-claude-agents.sh            (regenera todos)
-#       scripts/gen-claude-agents.sh jira-plan  (solo uno)
+#       scripts/gen-claude-agents.sh jira       (solo uno)
 # Editar SIEMPRE la version de .opencode/ y volver a correr esto.
 #
 # Existe porque las dos herramientas nombran distinto las tools del MCP:
@@ -14,8 +14,7 @@ set -euo pipefail
 DA="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # La lista de tools de cada agente: es lo unico que Claude pide y opencode no.
-tools_jira_report="Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_search_issues_in_project, mcp__jira__jira_create_issue, mcp__jira__jira_update_issue, mcp__jira__jira_add_worklog, mcp__jira__jira_add_comment, mcp__jira__jira_transition_issue, mcp__jira__jira_get_transitions, mcp__jira__jira_create_subtask, mcp__jira__jira_link_issues, mcp__jira__jira_weekly_plan, mcp__jira__jira_weekly_update, mcp__jira__jira_bbdd_create, mcp__jira__jira_bbdd_update, mcp__jira__jira_bbdd_append_comment, mcp__jira__sheets_read, mcp__jira__sheets_write, mcp__jira__sheets_metadata, mcp__jira__sheets_analyze, mcp__jira__sheets_find_columns, mcp__jira__confluence_search"
-tools_jira_plan="Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_update_issue, mcp__jira__jira_add_comment, mcp__jira__jira_create_issue, mcp__jira__jira_create_subtask, mcp__jira__jira_get_transitions, mcp__jira__jira_transition_issue, mcp__jira__jira_link_issues"
+tools_jira="Bash, Read, Write, Edit, Glob, Grep, mcp__jira__jira_get_issue, mcp__jira__jira_search_issues, mcp__jira__jira_create_issue, mcp__jira__jira_create_subtask, mcp__jira__jira_update_issue, mcp__jira__jira_add_worklog, mcp__jira__jira_add_comment, mcp__jira__jira_get_transitions, mcp__jira__jira_transition_issue, mcp__jira__jira_link_issues"
 
 # Los auditores: LECTURA mas Write, y nada de Edit. Que no puedan editar no es un detalle
 # de configuracion, es el limite que los define — un auditor que arregla lo que encuentra deja de

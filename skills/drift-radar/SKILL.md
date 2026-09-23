@@ -40,7 +40,7 @@ una esté mal, es que **hay varias** y cada una respalda una conclusión distint
 | 2 | **Aún idénticos** en >1 repo | lo barato: todavía se unifican sin resolver conflictos |
 | 3 | **CRC-16**: definiciones con `0x1021` + bucle de desplazamiento | tests y usos excluidos, para que el número sea real |
 | 4 | **Opcodes** declarados fuera de `sw-diagnosticoremoto/contracts/tg-protocol.json` | el contrato es la fuente de verdad; lo de afuera es riesgo |
-| 5 | Las dos variantes de `jira-report` | `.claude/` se genera desde `.opencode/`; si difieren, regenerar |
+| 5 | Las dos variantes del agente `jira` | `.claude/` se genera desde `.opencode/`; si difieren, regenerar |
 
 ## Cómo interpretás lo que sale
 
